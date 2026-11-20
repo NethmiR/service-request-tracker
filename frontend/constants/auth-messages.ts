@@ -24,9 +24,3 @@ export const AuthMessage = {
   MyServiceRequestsTitle: "My requests",
   MyServiceRequestsPlaceholder: "The service requests you raise will appear here.",
 } as const;
-
-export function formatRetryAfterMessage(seconds: number): string {
-  const unit = seconds === 1 ? "second" : "seconds";
-
-  return `Too many attempts. Please try again in ${seconds} ${unit}.`;
-}

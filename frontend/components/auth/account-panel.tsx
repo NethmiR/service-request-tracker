@@ -5,9 +5,10 @@
 
 import { AccountProfile } from "@/components/auth/account-profile";
 import { ChangePasswordForm } from "@/components/auth/change-password-form";
-import { ActiveSessionsSection } from "@/components/sessions/active-sessions-section";
+import { SessionsSection } from "@/components/sessions/sessions-section";
 import { ContentSection } from "@/components/shared/content-section";
 import { AccountMessage } from "@/constants/account-messages";
+import { OWN_SESSIONS_COPY } from "@/constants/session-messages";
 import { useOwnSessions } from "@/hooks/sessions/use-own-sessions";
 
 export function AccountPanel() {
@@ -29,7 +30,7 @@ export function AccountPanel() {
           <ChangePasswordForm onSuccess={handlePasswordChanged} />
         </div>
       </ContentSection>
-      <ActiveSessionsSection {...ownSessions} />
+      <SessionsSection {...ownSessions} copy={OWN_SESSIONS_COPY} />
     </div>
   );
 }
