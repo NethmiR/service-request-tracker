@@ -1,0 +1,72 @@
+I am developing a system for service request management for a IT Support division of a company. (Fictional Company Name: NNR Co.). This is a fundamental system without much advanced features. Features are as follows:
+
+This system has 3 user roles as ADMIN, TECHNICIAN and REQUESTER. Their privileges are discussed later. 
+
+All three user roles are allowed to create service requests. Admin has access of both other roles.
+
+Service requests includes these information:
+- Title
+- Description
+- Tags (Predefined tags: Hardware, Software, Network, Other). Can have multiple tags for same request.
+- Requested By
+- Timestamp
+- Status (OPEN, ASSIGNED, IN_PROGRESS, RESOLVED): When created it is OPEN by default.
+
+Then the request can be visible in the dashboard. Technicians (obviously admins) can view them. They can assign a service request to themselves as well.
+
+When a request is assigned to a specific technician / admin (user from here), they can change the statuses of it. Status is automatically changed to ASSIGNED if someone get it assigned to himself. After assigning, it cannot be open again. But can be assigned to someone else. But that re-assigning can be done only by the user currently assigned to it. 
+
+The status history and assignee history should be saved in two database tables. Each has following details.
+
+Status History:
+- from status
+- to status
+- status changed by
+- timestamp
+- remark: remark is optional
+
+Assignee history:
+- assigned from
+- assigned to
+- timestamop
+- remark: remark is mandatory
+
+User management is done only by admin.
+
+Admin can add users by giving email and name. A temporary password is generated. It should be mailed to the added email. However, as email integration is not doing at the moment, just display the password in the UI for once.
+
+When signing in by any user, if the password is not changed at least once, changing password is mandatory before doing anything else.
+
+All auth related audits should be saved in the system. Sessions should be stored and users should be able to clear their sessions + Admins also can.
+
+As mail integration is not there, admins are allowed to reset password of users to a automatically created new password as same as creating a new user. Then again the password changing mandatory trigger should be there when signing in again. Users can also reset their password by giving current and new password if they already successfully signed in as well.
+
+These in-secure admin privileges will be removed when email integration is done.
+
+- There should be an overview page in the frontend visible for admins and technicians. (Other users, means just requesters directly  directed to their request history)
+- Overview page should include kind of analytics like,
+-- Boxes for number of open requests, in progress requests, assigned requests
+-- Highlights about current system status for technicians and admins to review
+-- Graph based analytics which are meaningful in long term for them.
+
+Instructions for backend and frontend:
+- Backend is created with Laravel following all high-level standards for security, clear business logics, performance, concurrency control, data ACID properties, Proper design patterns, SOLID principles...etc.
+- All Laravel standards for database, data migrations, seeding should be followed
+- All optimcal security practices should be followed assuming the system is going to production.
+- Sanctum should be used for high secure auth.
+
+Instructions for frontend:
+- No landing page. Landing page is redirected to sign in.
+- After signing in, it should be a sidebar layout where sidebar's option changed based on accessible features for each user roles.
+- Frontend is created with Next + TS + App Router. All standards of it should be followed including, optimal app router standards, high application maintainability, optimal modularity and reusability, following design patterns, SOLID and OOP where possible, optimal use of components instead of stacking everything inside single file.
+- Folder structure should be based on features with space for shared files. For example, components folder has sub folders for different features. Always try to reuse components / base components and implement them where necessary for features.
+- Use shared contexts for state management. Axios for HTTP requests.
+
+For both:
+- Exception handling should be at its best and should be clearly defined without redundancies.
+- Type safety should be strictly followed. No any hardcoded strings should be used anywhere. Use enums. No unknown or any types. Consistency for types in backend and frontend should be followed. Unnecessary data should be not be passed from backend to frontend like password hashes.
+- Things that should be centrally done should be done.
+- No any code comments should be there anywhere in the code except each file should have a 2-3 line comment defining what each file does.
+- Whatever the text used for codes or content should not have AI generated fluff like em dashes, unnecessary line breaks, unnecessary semi colons, colons, commas, emojis or other characters.
+- File naming and folder naming, variables and all code segment naming should follow each framework standards and should be meaningful.
+- Names should be clearly meaningful with their full form without unclear acronyms and without any ambiguity.
