@@ -41,3 +41,5 @@ export const NETWORK_FAILURE_STATUS = 0;
 export const REQUEST_TIMEOUT_MILLISECONDS = 15000;
 
 export const PAGE_QUERY_PARAMETER = "page";
+
+export const FIRST_PAGE = 1;

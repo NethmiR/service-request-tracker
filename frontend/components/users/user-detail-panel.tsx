@@ -7,19 +7,17 @@
 import Link from "next/link";
 import { useState } from "react";
 import { SessionsSection } from "@/components/sessions/sessions-section";
-import { Alert } from "@/components/shared/alert";
-import { Button, getButtonClassNames } from "@/components/shared/button";
+import { getButtonClassNames } from "@/components/shared/button";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { EmptyState } from "@/components/shared/empty-state";
-import { Spinner } from "@/components/shared/spinner";
+import { LoadFailureAlert } from "@/components/shared/load-failure-alert";
+import { SectionLoader } from "@/components/shared/section-loader";
 import { TemporaryPasswordDialog } from "@/components/users/temporary-password-dialog";
 import { UserProfile } from "@/components/users/user-profile";
 import { AppRoute } from "@/constants/routes";
 import { USER_SESSIONS_COPY } from "@/constants/session-messages";
-import { UiMessage } from "@/constants/ui-messages";
 import { UserMessage } from "@/constants/user-messages";
 import { ErrorCode } from "@/enums/error-code";
-import { AlertTone } from "@/enums/ui/alert-tone";
 import { ButtonVariant } from "@/enums/ui/button-variant";
 import { ComponentSize } from "@/enums/ui/component-size";
 import { LoadStatus } from "@/enums/ui/load-status";
@@ -46,7 +44,6 @@ export function UserDetailPanel({ userId }: UserDetailPanelProps) {
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const [credentials, setCredentials] = useState<IssuedCredentials | null>(null);
-  const [isRetrying, setIsRetrying] = useState(false);
   const isOwnAccount = currentUser !== null && currentUser.id === userId;
 
   async function confirmResetPassword() {
@@ -92,22 +89,12 @@ export function UserDetailPanel({ userId }: UserDetailPanelProps) {
     }
   }
 
-  async function handleRetry() {
-    setIsRetrying(true);
-    await reload();
-    setIsRetrying(false);
-  }
-
   function renderContent() {
     const isRedirecting =
       state.status === LoadStatus.Failed && isHandledByRouteGuards(state.error);
 
     if (state.status === LoadStatus.Loading || isRedirecting) {
-      return (
-        <div className="flex justify-center py-10 text-primary">
-          <Spinner size={ComponentSize.Large} />
-        </div>
-      );
+      return <SectionLoader />;
     }
 
     if (state.status === LoadStatus.Failed && state.error?.hasCode(ErrorCode.NotFound)) {
@@ -122,29 +109,14 @@ export function UserDetailPanel({ userId }: UserDetailPanelProps) {
 
     if (state.status === LoadStatus.Failed) {
       return (
-        <Alert
-          tone={AlertTone.Danger}
-          title={UserMessage.UserLoadFailed}
-          action={
-            <Button
-              variant={ButtonVariant.Secondary}
-              size={ComponentSize.Small}
-              isLoading={isRetrying}
-              onClick={handleRetry}
-            >
-              {UiMessage.Retry}
-            </Button>
-          }
-        >
-          {messageForError(state.error)}
-        </Alert>
+        <LoadFailureAlert title={UserMessage.UserLoadFailed} error={state.error} onRetry={reload} />
       );
     }
 
     return (
       <>
         <UserProfile
-          user={state.user}
+          user={state.resource}
           isResetting={isResetting}
           onResetPassword={() => setIsResetConfirmOpen(true)}
         />

@@ -5,15 +5,13 @@
 
 import { useState } from "react";
 import { SessionsTable } from "@/components/sessions/sessions-table";
-import { Alert } from "@/components/shared/alert";
 import { Button } from "@/components/shared/button";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { ContentSection } from "@/components/shared/content-section";
-import { Spinner } from "@/components/shared/spinner";
+import { LoadFailureAlert } from "@/components/shared/load-failure-alert";
+import { SectionLoader } from "@/components/shared/section-loader";
 import { SessionMessage } from "@/constants/session-messages";
-import { UiMessage } from "@/constants/ui-messages";
 import { ErrorCode } from "@/enums/error-code";
-import { AlertTone } from "@/enums/ui/alert-tone";
 import { ButtonVariant } from "@/enums/ui/button-variant";
 import { ComponentSize } from "@/enums/ui/component-size";
 import { LoadStatus } from "@/enums/ui/load-status";
@@ -41,7 +39,6 @@ export function SessionsSection({
   const [sessionToEnd, setSessionToEnd] = useState<UserSession | null>(null);
   const [isEndAllOpen, setIsEndAllOpen] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
-  const [isRetrying, setIsRetrying] = useState(false);
 
   const hasClearableSessions =
     state.status === LoadStatus.Loaded && state.sessions.some((session) => !session.is_current);
@@ -85,12 +82,6 @@ export function SessionsSection({
     void runConfirmedAction(clearSessions, copy.endAllSucceeded);
   }
 
-  async function handleRetry() {
-    setIsRetrying(true);
-    await reload();
-    setIsRetrying(false);
-  }
-
   function renderActions() {
     if (state.status !== LoadStatus.Loaded) {
       return undefined;
@@ -114,32 +105,11 @@ export function SessionsSection({
 
   function renderContent() {
     if (state.status === LoadStatus.Loading) {
-      return (
-        <div className="flex justify-center py-10 text-primary">
-          <Spinner size={ComponentSize.Large} />
-        </div>
-      );
+      return <SectionLoader />;
     }
 
     if (state.status === LoadStatus.Failed) {
-      return (
-        <Alert
-          tone={AlertTone.Danger}
-          title={copy.loadFailed}
-          action={
-            <Button
-              variant={ButtonVariant.Secondary}
-              size={ComponentSize.Small}
-              isLoading={isRetrying}
-              onClick={handleRetry}
-            >
-              {UiMessage.Retry}
-            </Button>
-          }
-        >
-          {messageForError(state.error)}
-        </Alert>
-      );
+      return <LoadFailureAlert title={copy.loadFailed} error={state.error} onRetry={reload} />;
     }
 
     return (
