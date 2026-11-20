@@ -1,5 +1,5 @@
 // Column definitions shared by the service request tables, one export per column.
-// The title links to the request detail page, and Phase 6 builds the dashboard from the same definitions.
+// The title links to the request detail page, and My requests and the dashboard both build their tables from them.
 
 import Link from "next/link";
 import { ServiceRequestStatusBadge } from "@/components/service-requests/service-request-status-badge";
@@ -10,6 +10,7 @@ import {
   ServiceRequestMessage,
   formatRequestReference,
 } from "@/constants/service-request-messages";
+import { ServiceRequestWorkflowMessage } from "@/constants/service-request-workflow-messages";
 import { ServiceRequestTableColumn } from "@/enums/ui/service-request-table-column";
 import { formatDateTime } from "@/lib/utilities/format-date-time";
 import type { ServiceRequestSummary } from "@/types/service-requests/service-request-summary";
@@ -28,6 +29,14 @@ export const SERVICE_REQUEST_TITLE_COLUMN: TableColumn<ServiceRequestSummary> = 
       </Link>
       <span className="text-xs text-muted">{formatRequestReference(serviceRequest.id)}</span>
     </div>
+  ),
+};
+
+export const SERVICE_REQUEST_REQUESTED_BY_COLUMN: TableColumn<ServiceRequestSummary> = {
+  key: ServiceRequestTableColumn.RequestedBy,
+  header: ServiceRequestWorkflowMessage.RequestedByColumn,
+  cell: (serviceRequest) => (
+    <span className="text-foreground">{serviceRequest.requested_by.name}</span>
   ),
 };
 
