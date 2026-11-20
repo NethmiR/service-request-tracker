@@ -1,6 +1,7 @@
 <?php
 
 // Adds PostgreSQL check constraints from migrations, because the schema builder has no method for them.
+// Covers allowed values, lowercase text and two columns that must be empty or filled together.
 // Runs only on PostgreSQL so the SQLite test database still migrates.
 
 namespace App\Support\Database;
@@ -28,7 +29,7 @@ final class CheckConstraint
         $quotedValues = implode(', ', array_map(fn (string $value): string => $pdo->quote($value), $values));
         $grammar = $connection->getQueryGrammar();
 
-        self::add($connection, $table, $column, self::ALLOWED_VALUES_SUFFIX, sprintf(
+        self::add($connection, $table, self::columnConstraintName($table, $column, self::ALLOWED_VALUES_SUFFIX), sprintf(
             '%s IN (%s)',
             $grammar->wrap($column),
             $quotedValues,
@@ -45,10 +46,27 @@ final class CheckConstraint
 
         $wrappedColumn = $connection->getQueryGrammar()->wrap($column);
 
-        self::add($connection, $table, $column, self::LOWERCASE_SUFFIX, sprintf(
+        self::add($connection, $table, self::columnConstraintName($table, $column, self::LOWERCASE_SUFFIX), sprintf(
             '%s = LOWER(%s)',
             $wrappedColumn,
             $wrappedColumn,
+        ));
+    }
+
+    public static function nullTogether(string $table, string $constraintName, string $firstColumn, string $secondColumn): void
+    {
+        $connection = self::postgresConnection();
+
+        if ($connection === null) {
+            return;
+        }
+
+        $grammar = $connection->getQueryGrammar();
+
+        self::add($connection, $table, $constraintName, sprintf(
+            '(%s IS NULL) = (%s IS NULL)',
+            $grammar->wrap($firstColumn),
+            $grammar->wrap($secondColumn),
         ));
     }
 
@@ -59,14 +77,19 @@ final class CheckConstraint
         return $connection->getDriverName() === self::POSTGRES_DRIVER ? $connection : null;
     }
 
-    private static function add(Connection $connection, string $table, string $column, string $suffix, string $condition): void
+    private static function columnConstraintName(string $table, string $column, string $suffix): string
+    {
+        return implode('_', [$table, $column, $suffix]);
+    }
+
+    private static function add(Connection $connection, string $table, string $constraintName, string $condition): void
     {
         $grammar = $connection->getQueryGrammar();
 
         $connection->statement(sprintf(
             'ALTER TABLE %s ADD CONSTRAINT %s CHECK (%s)',
             $grammar->wrapTable($table),
-            $grammar->wrap(implode('_', [$table, $column, $suffix])),
+            $grammar->wrap($constraintName),
             $condition,
         ));
     }
