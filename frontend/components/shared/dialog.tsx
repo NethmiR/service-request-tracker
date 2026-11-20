@@ -1,10 +1,11 @@
 // Modal dialog built on the native dialog element and opened with showModal.
 // Escape closes it through onClose and the browser returns focus to the opener.
+// A dialog that is not dismissible ignores Escape and disables its close button.
 
 "use client";
 
 import { useEffect, useId, useRef } from "react";
-import type { ReactNode } from "react";
+import type { ReactNode, SyntheticEvent } from "react";
 import { UiMessage } from "@/constants/ui-messages";
 import { mergeClassNames } from "@/lib/utilities/merge-class-names";
 
@@ -14,6 +15,7 @@ interface DialogProps {
   title: string;
   description?: string;
   footer?: ReactNode;
+  dismissible?: boolean;
   className?: string;
   children?: ReactNode;
 }
@@ -24,6 +26,7 @@ export function Dialog({
   title,
   description,
   footer,
+  dismissible = true,
   className,
   children,
 }: DialogProps) {
@@ -47,6 +50,12 @@ export function Dialog({
     }
   }, [open]);
 
+  function handleCancel(event: SyntheticEvent<HTMLDialogElement>) {
+    if (!dismissible) {
+      event.preventDefault();
+    }
+  }
+
   function handleClose() {
     if (open) {
       onClose();
@@ -56,6 +65,7 @@ export function Dialog({
   return (
     <dialog
       ref={dialogRef}
+      onCancel={handleCancel}
       onClose={handleClose}
       aria-labelledby={titleId}
       aria-describedby={description !== undefined ? descriptionId : undefined}
@@ -79,8 +89,9 @@ export function Dialog({
         <button
           type="button"
           onClick={onClose}
+          disabled={!dismissible}
           aria-label={UiMessage.Close}
-          className="-mr-2 flex size-8 cursor-pointer items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-muted hover:text-foreground focus-visible:outline-2 focus-visible:outline-primary"
+          className="-mr-2 flex size-8 cursor-pointer items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-muted hover:text-foreground focus-visible:outline-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-60"
         >
           <svg aria-hidden="true" viewBox="0 0 16 16" className="size-4">
             <path

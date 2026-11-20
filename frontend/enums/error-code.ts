@@ -13,6 +13,7 @@ export enum ErrorCode {
   InvalidStatusTransition = "INVALID_STATUS_TRANSITION",
   StatusUnchanged = "STATUS_UNCHANGED",
   ConcurrentUpdate = "CONCURRENT_UPDATE",
+  CurrentSessionNotClearable = "CURRENT_SESSION_NOT_CLEARABLE",
   CsrfTokenMismatch = "CSRF_TOKEN_MISMATCH",
   ValidationFailed = "VALIDATION_FAILED",
   TooManyRequests = "TOO_MANY_REQUESTS",

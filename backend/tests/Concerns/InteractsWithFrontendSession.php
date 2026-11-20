@@ -2,6 +2,7 @@
 
 // Makes feature tests behave like the browser frontend that uses Sanctum cookie authentication.
 // Requests are stateful, cookies are carried by hand and every request starts from a clean in memory auth and session state.
+// Several signed in clients can be kept and switched between by their session id.
 
 namespace Tests\Concerns;
 
@@ -17,6 +18,8 @@ trait InteractsWithFrontendSession
     protected const string CSRF_COOKIE_ROUTE = '/sanctum/csrf-cookie';
 
     protected const string SIGN_IN_ROUTE = '/api/auth/sign-in';
+
+    private array $clientSessionCookies = [];
 
     protected function setUpInteractsWithFrontendSession(): void
     {
@@ -82,6 +85,26 @@ trait InteractsWithFrontendSession
         $this->rememberSessionCookie($response);
 
         return $response;
+    }
+
+    protected function signInOnFreshClient(User $user): string
+    {
+        $this->switchToFreshClient();
+
+        $sessionId = $this->signInThroughApi($user)
+            ->assertOk()
+            ->getCookie(config('session.cookie'))
+            ->getValue();
+
+        $this->clientSessionCookies[$sessionId] = $this->currentSessionCookieValue();
+
+        return $sessionId;
+    }
+
+    protected function switchToClient(string $sessionId): void
+    {
+        $this->switchToFreshClient();
+        $this->useSessionCookieValue($this->clientSessionCookies[$sessionId]);
     }
 
     private function resetInMemoryAuthenticationState(): void

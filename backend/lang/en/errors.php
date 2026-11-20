@@ -15,6 +15,7 @@ return [
     'INVALID_STATUS_TRANSITION' => 'The request cannot be moved to the selected status.',
     'STATUS_UNCHANGED' => 'The request already has the selected status.',
     'CONCURRENT_UPDATE' => 'The request was changed by someone else. Please reload and try again.',
+    'CURRENT_SESSION_NOT_CLEARABLE' => 'The current session cannot be ended here. Use sign out instead.',
     'CSRF_TOKEN_MISMATCH' => 'Your session has expired. Please refresh the page and try again.',
     'VALIDATION_FAILED' => 'The given data was invalid.',
     'TOO_MANY_REQUESTS' => 'Too many attempts. Please wait and try again.',
