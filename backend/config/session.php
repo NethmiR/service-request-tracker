@@ -1,18 +1,16 @@
 <?php
 
 // Session storage and session cookie settings.
-// Sessions back Sanctum SPA cookie authentication.
-
-use Illuminate\Support\Str;
+// Sessions back Sanctum SPA cookie authentication, so the defaults stay secure when a variable is missing.
 
 return [
     'driver' => env('SESSION_DRIVER', 'database'),
 
     'lifetime' => (int) env('SESSION_LIFETIME', 120),
 
-    'expire_on_close' => env('SESSION_EXPIRE_ON_CLOSE', false),
+    'expire_on_close' => false,
 
-    'encrypt' => env('SESSION_ENCRYPT', false),
+    'encrypt' => env('SESSION_ENCRYPT', true),
 
     'files' => storage_path('framework/sessions'),
 
@@ -24,22 +22,19 @@ return [
 
     'lottery' => [2, 100],
 
-    'cookie' => env(
-        'SESSION_COOKIE',
-        Str::slug((string) env('APP_NAME', 'laravel')).'-session'
-    ),
+    'cookie' => env('SESSION_COOKIE', 'service_request_tracker_session'),
 
     'path' => env('SESSION_PATH', '/'),
 
     'domain' => env('SESSION_DOMAIN'),
 
-    'secure' => env('SESSION_SECURE_COOKIE'),
+    'secure' => env('SESSION_SECURE_COOKIE', true),
 
-    'http_only' => env('SESSION_HTTP_ONLY', true),
+    'http_only' => true,
 
     'same_site' => env('SESSION_SAME_SITE', 'lax'),
 
-    'partitioned' => env('SESSION_PARTITIONED_COOKIE', false),
+    'partitioned' => false,
 
     'serialization' => 'json',
 ];
