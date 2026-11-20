@@ -1,5 +1,5 @@
 // Text for the sign in, change password and sign out features.
-// Also holds the placeholder text for the home pages until later phases fill them in.
+// Also holds the placeholder text of the overview page until Phase 7 replaces it.
 
 export const AuthMessage = {
   SignInTitle: "Sign in",
@@ -21,6 +21,4 @@ export const AuthMessage = {
   SignOutFailed: "You could not be signed out. Please try again.",
   OverviewTitle: "Overview",
   OverviewPlaceholder: "The overview of service requests will appear here.",
-  MyServiceRequestsTitle: "My requests",
-  MyServiceRequestsPlaceholder: "The service requests you raise will appear here.",
 } as const;
