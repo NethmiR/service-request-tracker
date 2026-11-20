@@ -1,5 +1,6 @@
 // Content of the user detail page with the profile, the reset password action and the user's sessions.
 // When admins reset their own password, the one time dialog is shown first and they are signed out only after closing it.
+// A toast confirms the reset of their own password because the route guards then move them away from this page.
 
 "use client";
 
@@ -56,6 +57,7 @@ export function UserDetailPanel({ userId }: UserDetailPanelProps) {
       setIsResetConfirmOpen(false);
 
       if (isOwnAccount && issuedCredentials.temporary_password === null) {
+        notify(NotificationType.Success, UserMessage.OwnPasswordReset);
         void refreshUser();
         return;
       }
@@ -85,6 +87,7 @@ export function UserDetailPanel({ userId }: UserDetailPanelProps) {
     setCredentials(null);
 
     if (isOwnAccount) {
+      notify(NotificationType.Success, UserMessage.OwnPasswordReset);
       void refreshUser();
     }
   }
