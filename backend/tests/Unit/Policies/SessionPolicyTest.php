@@ -1,7 +1,7 @@
 <?php
 
 // Verifies who may end a stored session through the session policy.
-// In this phase only the owner may, and admins gain their rule in Phase 4.
+// The owner and admins may, while any other user may not.
 
 namespace Tests\Unit\Policies;
 
@@ -39,11 +39,11 @@ class SessionPolicyTest extends TestCase
         $this->assertFalse((new SessionPolicy)->delete($otherUser, $this->sessionOwnedBy(self::OWNER_ID)));
     }
 
-    public function test_admin_may_not_delete_another_users_session_in_this_phase(): void
+    public function test_admin_may_delete_another_users_session(): void
     {
         $admin = User::factory()->admin()->make(['id' => self::OTHER_USER_ID]);
 
-        $this->assertFalse((new SessionPolicy)->delete($admin, $this->sessionOwnedBy(self::OWNER_ID)));
+        $this->assertTrue((new SessionPolicy)->delete($admin, $this->sessionOwnedBy(self::OWNER_ID)));
     }
 
     private function sessionOwnedBy(int $userId): ActiveSession

@@ -9,4 +9,6 @@ enum RateLimiterName: string
 {
     case Api = 'api';
     case PasswordChange = 'password-change';
+    case UserCreation = 'user-creation';
+    case AdminPasswordReset = 'admin-password-reset';
 }

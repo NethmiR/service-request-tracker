@@ -1,5 +1,5 @@
 // General UI text shared across features.
-// Feature specific text is added by the phase that introduces the feature.
+// Also formats the page indicator and the rate limit message that any feature can show.
 
 export const UiMessage = {
   Loading: "Loading",
@@ -23,4 +23,10 @@ export const UiMessage = {
 
 export function formatPageIndicator(currentPage: number, lastPage: number): string {
   return `Page ${currentPage} of ${lastPage}`;
+}
+
+export function formatRetryAfterMessage(seconds: number): string {
+  const unit = seconds === 1 ? "second" : "seconds";
+
+  return `Too many attempts. Please try again in ${seconds} ${unit}.`;
 }

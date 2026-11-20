@@ -1,13 +1,18 @@
 <?php
 
-// Registers application wide services and boot time configuration.
-// Defines the central password policy, the rate limiters, the authorization policies and the strict model and database safeguards.
+// Registers application wide services, container bindings and boot time configuration.
+// Defines the central password policy, the rate limiters, the Gates, the authorization policies and the strict model and database safeguards.
 
 namespace App\Providers;
 
+use App\Contracts\Users\TemporaryPasswordDelivery;
 use App\Data\Sessions\ActiveSession;
+use App\Enums\GateAbility;
 use App\Enums\RateLimiterName;
+use App\Enums\UserRole;
+use App\Models\User;
 use App\Policies\SessionPolicy;
+use App\Services\Users\DisplayOnceTemporaryPasswordDelivery;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
@@ -21,6 +26,10 @@ use Laravel\Sanctum\Sanctum;
 class AppServiceProvider extends ServiceProvider
 {
     public const int MINIMUM_PASSWORD_LENGTH = 12;
+
+    public array $bindings = [
+        TemporaryPasswordDelivery::class => DisplayOnceTemporaryPasswordDelivery::class,
+    ];
 
     public function register(): void {}
 
@@ -54,18 +63,37 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for(
             RateLimiterName::Api->value,
             fn (Request $request): Limit => Limit::perMinute((int) config('rate_limits.api.max_requests_per_minute'))
-                ->by((string) ($request->user()?->getAuthIdentifier() ?? $request->ip())),
+                ->by($this->rateLimitKey($request)),
         );
 
         RateLimiter::for(
             RateLimiterName::PasswordChange->value,
             fn (Request $request): Limit => Limit::perMinute((int) config('rate_limits.password_change.max_attempts_per_minute'))
-                ->by((string) ($request->user()?->getAuthIdentifier() ?? $request->ip())),
+                ->by($this->rateLimitKey($request)),
         );
+
+        RateLimiter::for(
+            RateLimiterName::UserCreation->value,
+            fn (Request $request): Limit => Limit::perMinute((int) config('rate_limits.user_creation.max_attempts_per_minute'))
+                ->by($this->rateLimitKey($request)),
+        );
+
+        RateLimiter::for(
+            RateLimiterName::AdminPasswordReset->value,
+            fn (Request $request): Limit => Limit::perMinute((int) config('rate_limits.admin_password_reset.max_attempts_per_minute'))
+                ->by($this->rateLimitKey($request)),
+        );
+    }
+
+    private function rateLimitKey(Request $request): string
+    {
+        return (string) ($request->user()?->getAuthIdentifier() ?? $request->ip());
     }
 
     private function configureAuthorization(): void
     {
+        Gate::define(GateAbility::ManageUsers->value, fn (User $user): bool => $user->hasRole(UserRole::Admin));
+
         Gate::policy(ActiveSession::class, SessionPolicy::class);
     }
 }

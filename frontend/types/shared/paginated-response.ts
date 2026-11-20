@@ -1,5 +1,5 @@
 // Envelope of a paginated Laravel API Resource collection.
-// Field names mirror the wire format and are checked against a real response in Phase 5.
+// Field names mirror the Laravel 13 wire format, where the ellipsis link in meta carries no page number.
 
 export interface PaginationLinks {
   first: string | null;
@@ -11,6 +11,7 @@ export interface PaginationLinks {
 export interface PaginationMetaLink {
   url: string | null;
   label: string;
+  page?: number | null;
   active: boolean;
 }
 

@@ -1,15 +1,12 @@
 <?php
 
 // Reads and writes rows of the sessions table directly for session management tests.
-// Inserted rows stand in for sessions of other users and for expired sessions, and audit rows of ended sessions can be read back.
+// Inserted rows stand in for sessions of other users and for expired sessions.
 
 namespace Tests\Concerns;
 
-use App\Enums\AuthAuditEvent;
-use App\Models\AuthAuditLog;
 use App\Models\User;
 use App\Services\Sessions\SessionIdentifier;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -65,12 +62,5 @@ trait InteractsWithStoredSessions
             ->where('user_id', $user->id)
             ->sole()
             ->id;
-    }
-
-    protected function sessionClearedByOwnerLogs(): Collection
-    {
-        return AuthAuditLog::query()
-            ->where('event', AuthAuditEvent::SessionClearedByOwner)
-            ->get();
     }
 }

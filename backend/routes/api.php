@@ -3,6 +3,7 @@
 // Defines the REST API routes, all served under the api prefix.
 // Each phase adds its routes here together with the matching frontend endpoints.
 
+use App\Enums\GateAbility;
 use App\Enums\RateLimiterName;
 use App\Http\Controllers\Auth\ChangePasswordController;
 use App\Http\Controllers\Auth\CurrentUserController;
@@ -11,9 +12,18 @@ use App\Http\Controllers\Auth\SignOutController;
 use App\Http\Controllers\Sessions\ClearOtherSessionsController;
 use App\Http\Controllers\Sessions\ClearSessionController;
 use App\Http\Controllers\Sessions\ListSessionsController;
+use App\Http\Controllers\Users\ClearUserSessionController;
+use App\Http\Controllers\Users\ClearUserSessionsController;
+use App\Http\Controllers\Users\CreateUserController;
+use App\Http\Controllers\Users\ListUsersController;
+use App\Http\Controllers\Users\ListUserSessionsController;
+use App\Http\Controllers\Users\ResetUserPasswordController;
+use App\Http\Controllers\Users\ShowUserController;
 use App\Http\Middleware\EnsurePasswordChanged;
 use App\Http\Middleware\EnsureSessionStarted;
+use App\Http\Middleware\PreventResponseCaching;
 use App\Services\Sessions\SessionIdentifier;
+use Illuminate\Auth\Middleware\Authorize;
 use Illuminate\Routing\Middleware\ThrottleRequests;
 use Illuminate\Support\Facades\Route;
 
@@ -34,5 +44,33 @@ Route::middleware(['auth:sanctum', ThrottleRequests::using(RateLimiterName::Api-
         Route::delete('sessions/{sessionIdentifier}', ClearSessionController::class)
             ->where('sessionIdentifier', SessionIdentifier::PATTERN)
             ->name('sessions.destroy');
+
+        Route::middleware(Authorize::using(GateAbility::ManageUsers->value))->group(function (): void {
+            Route::get('users', ListUsersController::class)->name('users.index');
+            Route::post('users', CreateUserController::class)
+                ->middleware([
+                    ThrottleRequests::using(RateLimiterName::UserCreation->value),
+                    PreventResponseCaching::class,
+                ])
+                ->name('users.store');
+            Route::get('users/{user}', ShowUserController::class)->whereNumber('user')->name('users.show');
+            Route::post('users/{user}/password-reset', ResetUserPasswordController::class)
+                ->whereNumber('user')
+                ->middleware([
+                    ThrottleRequests::using(RateLimiterName::AdminPasswordReset->value),
+                    PreventResponseCaching::class,
+                ])
+                ->name('users.password-reset');
+            Route::get('users/{user}/sessions', ListUserSessionsController::class)
+                ->whereNumber('user')
+                ->name('users.sessions.index');
+            Route::delete('users/{user}/sessions', ClearUserSessionsController::class)
+                ->whereNumber('user')
+                ->name('users.sessions.destroy-all');
+            Route::delete('users/{user}/sessions/{sessionIdentifier}', ClearUserSessionController::class)
+                ->whereNumber('user')
+                ->where('sessionIdentifier', SessionIdentifier::PATTERN)
+                ->name('users.sessions.destroy');
+        });
     });
 });

@@ -17,10 +17,10 @@ import { AutocompleteToken } from "@/enums/ui/autocomplete-token";
 import { ComponentSize } from "@/enums/ui/component-size";
 import { useAuth } from "@/hooks/auth/use-auth";
 import {
-  emptyAuthFormErrors,
-  resolveAuthFormErrors,
-  type AuthFormErrors,
-} from "@/lib/auth/resolve-auth-form-errors";
+  emptyFormErrors,
+  resolveFormErrors,
+  type FormErrors,
+} from "@/lib/forms/resolve-form-errors";
 import { ApiError } from "@/lib/http/api-error";
 import type { SignInRequest } from "@/types/auth/sign-in-request";
 
@@ -29,7 +29,7 @@ const EMPTY_SIGN_IN_REQUEST: SignInRequest = { email: "", password: "" };
 export function SignInForm() {
   const { signIn } = useAuth();
   const [values, setValues] = useState<SignInRequest>(EMPTY_SIGN_IN_REQUEST);
-  const [errors, setErrors] = useState<AuthFormErrors<SignInFieldName>>(emptyAuthFormErrors);
+  const [errors, setErrors] = useState<FormErrors<SignInFieldName>>(emptyFormErrors);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   function handleChange(event: ChangeEvent<HTMLInputElement>) {
@@ -40,13 +40,13 @@ export function SignInForm() {
   async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     setIsSubmitting(true);
-    setErrors(emptyAuthFormErrors());
+    setErrors(emptyFormErrors());
 
     try {
       await signIn(values);
     } catch (error) {
       const apiError = error instanceof ApiError ? error : null;
-      setErrors(resolveAuthFormErrors(apiError, SIGN_IN_FIELDS));
+      setErrors(resolveFormErrors(apiError, SIGN_IN_FIELDS));
 
       if (apiError?.hasCode(ErrorCode.InvalidCredentials)) {
         setValues((current) => ({ ...current, password: "" }));

@@ -1,24 +1,24 @@
-// Turns a failed auth form submission into the alert message and field errors the form shows.
-// Shared by the sign in and change password forms so this error handling is written once.
+// Turns a failed form submission into the alert message and field errors the form shows.
+// Shared by every form so this error handling is written once.
 
-import { formatRetryAfterMessage } from "@/constants/auth-messages";
 import { ERROR_MESSAGES } from "@/constants/error-messages";
+import { formatRetryAfterMessage } from "@/constants/ui-messages";
 import { ErrorCode } from "@/enums/error-code";
 import type { ApiError } from "@/lib/http/api-error";
 
-export interface AuthFormErrors<Field extends string> {
+export interface FormErrors<Field extends string> {
   message: string | null;
   fieldErrors: Partial<Record<Field, string>>;
 }
 
-export function emptyAuthFormErrors<Field extends string>(): AuthFormErrors<Field> {
+export function emptyFormErrors<Field extends string>(): FormErrors<Field> {
   return { message: null, fieldErrors: {} };
 }
 
-export function resolveAuthFormErrors<Field extends string>(
+export function resolveFormErrors<Field extends string>(
   error: ApiError | null,
   fields: readonly Field[],
-): AuthFormErrors<Field> {
+): FormErrors<Field> {
   if (error === null) {
     return { message: ERROR_MESSAGES[ErrorCode.ServerError], fieldErrors: {} };
   }

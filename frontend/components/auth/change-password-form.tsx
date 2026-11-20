@@ -22,10 +22,10 @@ import { NotificationType } from "@/enums/ui/notification-type";
 import { useAuth } from "@/hooks/auth/use-auth";
 import { useNotification } from "@/hooks/shared/use-notification";
 import {
-  emptyAuthFormErrors,
-  resolveAuthFormErrors,
-  type AuthFormErrors,
-} from "@/lib/auth/resolve-auth-form-errors";
+  emptyFormErrors,
+  resolveFormErrors,
+  type FormErrors,
+} from "@/lib/forms/resolve-form-errors";
 import { ApiError } from "@/lib/http/api-error";
 import type { ChangePasswordRequest } from "@/types/auth/change-password-request";
 import type { CurrentUser } from "@/types/auth/current-user";
@@ -45,7 +45,7 @@ export function ChangePasswordForm({ onSuccess }: ChangePasswordFormProps) {
   const { notify } = useNotification();
   const [values, setValues] = useState<ChangePasswordRequest>(EMPTY_CHANGE_PASSWORD_REQUEST);
   const [errors, setErrors] =
-    useState<AuthFormErrors<ChangePasswordFieldName>>(emptyAuthFormErrors);
+    useState<FormErrors<ChangePasswordFieldName>>(emptyFormErrors);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   function handleChange(event: ChangeEvent<HTMLInputElement>) {
@@ -56,7 +56,7 @@ export function ChangePasswordForm({ onSuccess }: ChangePasswordFormProps) {
   async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     setIsSubmitting(true);
-    setErrors(emptyAuthFormErrors());
+    setErrors(emptyFormErrors());
 
     try {
       const user = await changePassword(values);
@@ -65,7 +65,7 @@ export function ChangePasswordForm({ onSuccess }: ChangePasswordFormProps) {
       onSuccess(user);
     } catch (error) {
       setErrors(
-        resolveAuthFormErrors(error instanceof ApiError ? error : null, CHANGE_PASSWORD_FIELDS),
+        resolveFormErrors(error instanceof ApiError ? error : null, CHANGE_PASSWORD_FIELDS),
       );
     } finally {
       setIsSubmitting(false);

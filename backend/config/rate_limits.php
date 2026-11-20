@@ -1,6 +1,6 @@
 <?php
 
-// Limits for sign in attempts, password changes and general API usage.
+// Limits for sign in attempts, password changes, user management and general API usage.
 // Every value can be overridden through environment variables.
 
 return [
@@ -11,6 +11,12 @@ return [
     ],
     'password_change' => [
         'max_attempts_per_minute' => (int) env('PASSWORD_CHANGE_MAX_ATTEMPTS_PER_MINUTE', 5),
+    ],
+    'user_creation' => [
+        'max_attempts_per_minute' => (int) env('USER_CREATION_MAX_ATTEMPTS_PER_MINUTE', 10),
+    ],
+    'admin_password_reset' => [
+        'max_attempts_per_minute' => (int) env('ADMIN_PASSWORD_RESET_MAX_ATTEMPTS_PER_MINUTE', 10),
     ],
     'api' => [
         'max_requests_per_minute' => (int) env('API_MAX_REQUESTS_PER_MINUTE', 120),

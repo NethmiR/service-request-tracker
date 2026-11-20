@@ -1,5 +1,5 @@
-// Account page section that lists the user's active sessions and ends one or all other sessions.
-// Asks for confirmation before each action and reports the outcome through notifications.
+// Section that lists active sessions and ends one session or every session that can be ended.
+// Used by the account and user detail pages, which pass their own data source and text through props.
 
 "use client";
 
@@ -19,35 +19,35 @@ import { ComponentSize } from "@/enums/ui/component-size";
 import { LoadStatus } from "@/enums/ui/load-status";
 import { NotificationType } from "@/enums/ui/notification-type";
 import { useNotification } from "@/hooks/shared/use-notification";
-import type { OwnSessions } from "@/hooks/sessions/use-own-sessions";
+import type { SessionList } from "@/hooks/sessions/use-session-list";
 import { ApiError } from "@/lib/http/api-error";
+import { isHandledByRouteGuards } from "@/lib/http/is-handled-by-route-guards";
 import { messageForError } from "@/lib/http/message-for-error";
+import type { SessionSectionCopy } from "@/types/sessions/session-section-copy";
 import type { UserSession } from "@/types/sessions/user-session";
 
-const SILENTLY_HANDLED_ERROR_CODES: ReadonlySet<ErrorCode> = new Set([
-  ErrorCode.Unauthenticated,
-  ErrorCode.PasswordChangeRequired,
-]);
+interface SessionsSectionProps extends SessionList {
+  copy: SessionSectionCopy;
+}
 
-type ActiveSessionsSectionProps = OwnSessions;
-
-export function ActiveSessionsSection({
+export function SessionsSection({
   state,
   reload,
   clearSession,
-  clearOtherSessions,
-}: ActiveSessionsSectionProps) {
+  clearSessions,
+  copy,
+}: SessionsSectionProps) {
   const { notify } = useNotification();
   const [sessionToEnd, setSessionToEnd] = useState<UserSession | null>(null);
-  const [isEndOthersOpen, setIsEndOthersOpen] = useState(false);
+  const [isEndAllOpen, setIsEndAllOpen] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
 
-  const hasOtherSessions =
+  const hasClearableSessions =
     state.status === LoadStatus.Loaded && state.sessions.some((session) => !session.is_current);
 
   function handleFailure(error: ApiError | null) {
-    if (error !== null && SILENTLY_HANDLED_ERROR_CODES.has(error.code)) {
+    if (isHandledByRouteGuards(error)) {
       return;
     }
 
@@ -71,7 +71,7 @@ export function ActiveSessionsSection({
     } finally {
       setIsConfirming(false);
       setSessionToEnd(null);
-      setIsEndOthersOpen(false);
+      setIsEndAllOpen(false);
     }
   }
 
@@ -81,8 +81,8 @@ export function ActiveSessionsSection({
     }
   }
 
-  function confirmEndOtherSessions() {
-    void runConfirmedAction(clearOtherSessions, SessionMessage.OtherSessionsEnded);
+  function confirmEndAllSessions() {
+    void runConfirmedAction(clearSessions, copy.endAllSucceeded);
   }
 
   async function handleRetry() {
@@ -96,18 +96,18 @@ export function ActiveSessionsSection({
       return undefined;
     }
 
-    if (!hasOtherSessions) {
-      return <p className="text-sm text-muted">{SessionMessage.NoOtherSessions}</p>;
+    if (!hasClearableSessions) {
+      return <p className="text-sm text-muted">{copy.nothingToEnd}</p>;
     }
 
     return (
       <Button
         variant={ButtonVariant.Danger}
         size={ComponentSize.Small}
-        onClick={() => setIsEndOthersOpen(true)}
+        onClick={() => setIsEndAllOpen(true)}
         disabled={isConfirming}
       >
-        {SessionMessage.EndOtherSessions}
+        {copy.endAllLabel}
       </Button>
     );
   }
@@ -125,7 +125,7 @@ export function ActiveSessionsSection({
       return (
         <Alert
           tone={AlertTone.Danger}
-          title={SessionMessage.LoadFailed}
+          title={copy.loadFailed}
           action={
             <Button
               variant={ButtonVariant.Secondary}
@@ -153,8 +153,8 @@ export function ActiveSessionsSection({
 
   return (
     <ContentSection
-      title={SessionMessage.SectionTitle}
-      description={SessionMessage.SectionDescription}
+      title={copy.title}
+      description={copy.description}
       actions={renderActions()}
     >
       {renderContent()}
@@ -168,13 +168,13 @@ export function ActiveSessionsSection({
         onCancel={() => setSessionToEnd(null)}
       />
       <ConfirmDialog
-        open={isEndOthersOpen}
-        title={SessionMessage.EndOtherSessionsTitle}
-        description={SessionMessage.EndOtherSessionsDescription}
-        confirmLabel={SessionMessage.EndOtherSessions}
+        open={isEndAllOpen}
+        title={copy.endAllTitle}
+        description={copy.endAllDescription}
+        confirmLabel={copy.endAllLabel}
         isConfirming={isConfirming}
-        onConfirm={confirmEndOtherSessions}
-        onCancel={() => setIsEndOthersOpen(false)}
+        onConfirm={confirmEndAllSessions}
+        onCancel={() => setIsEndAllOpen(false)}
       />
     </ContentSection>
   );

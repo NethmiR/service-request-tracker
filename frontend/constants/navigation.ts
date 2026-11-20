@@ -1,7 +1,7 @@
 // Text and items of the signed in navigation, listed in display order.
 // Each later phase adds its item here in the same change as its page.
 
-import { ALL_ROLES, STAFF_ROLES } from "@/constants/role-groups";
+import { ADMIN_ROLES, ALL_ROLES, STAFF_ROLES } from "@/constants/role-groups";
 import { AppRoute } from "@/constants/routes";
 import type { NavigationItem } from "@/types/shared/navigation-item";
 
@@ -9,6 +9,7 @@ export const NavigationMessage = {
   NavigationLabel: "Main navigation",
   Overview: "Overview",
   MyServiceRequests: "My requests",
+  Users: "Users",
   Account: "Account",
   OpenMenu: "Open menu",
   CloseMenu: "Close menu",
@@ -25,6 +26,11 @@ export const NAVIGATION_ITEMS: readonly NavigationItem[] = [
     route: AppRoute.MyServiceRequests,
     label: NavigationMessage.MyServiceRequests,
     allowedRoles: ALL_ROLES,
+  },
+  {
+    route: AppRoute.Users,
+    label: NavigationMessage.Users,
+    allowedRoles: ADMIN_ROLES,
   },
   {
     route: AppRoute.Account,
