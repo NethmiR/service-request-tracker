@@ -26,3 +26,7 @@ export const PUBLIC_ROUTES: ReadonlySet<string> = new Set([AppRoute.SignIn]);
 export function serviceRequestDetailRoute(serviceRequestId: number): string {
   return `${AppRoute.ServiceRequests}/${serviceRequestId}`;
 }
+
+export function userDetailRoute(userId: number): string {
+  return `${AppRoute.Users}/${userId}`;
+}

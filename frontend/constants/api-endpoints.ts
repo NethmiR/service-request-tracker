@@ -10,8 +10,25 @@ export enum ApiEndpoint {
   ChangePassword = "/api/auth/password",
   Sessions = "/api/sessions",
   OtherSessions = "/api/sessions/others",
+  Users = "/api/users",
 }
 
 export function sessionEndpoint(sessionIdentifier: string): string {
   return `${ApiEndpoint.Sessions}/${encodeURIComponent(sessionIdentifier)}`;
+}
+
+export function userEndpoint(userId: number): string {
+  return `${ApiEndpoint.Users}/${userId}`;
+}
+
+export function userPasswordResetEndpoint(userId: number): string {
+  return `${userEndpoint(userId)}/password-reset`;
+}
+
+export function userSessionsEndpoint(userId: number): string {
+  return `${userEndpoint(userId)}/sessions`;
+}
+
+export function userSessionEndpoint(userId: number, sessionIdentifier: string): string {
+  return `${userSessionsEndpoint(userId)}/${encodeURIComponent(sessionIdentifier)}`;
 }

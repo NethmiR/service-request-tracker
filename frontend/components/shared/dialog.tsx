@@ -1,6 +1,6 @@
 // Modal dialog built on the native dialog element and opened with showModal.
 // Escape closes it through onClose and the browser returns focus to the opener.
-// A dialog that is not dismissible ignores Escape and disables its close button.
+// A dialog that is not dismissible ignores Escape, disables its close button and reopens if the browser closes it anyway.
 
 "use client";
 
@@ -57,9 +57,16 @@ export function Dialog({
   }
 
   function handleClose() {
-    if (open) {
-      onClose();
+    if (!open) {
+      return;
     }
+
+    if (!dismissible) {
+      dialogRef.current?.showModal();
+      return;
+    }
+
+    onClose();
   }
 
   return (

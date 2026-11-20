@@ -1,4 +1,4 @@
-// HTTP statuses, headers, methods and limits the HTTP client relies on.
+// HTTP statuses, headers, methods, query parameter names and limits the HTTP client relies on.
 // Keeps protocol level values out of the request logic.
 
 export enum HttpStatus {
@@ -39,3 +39,5 @@ export const XSRF_HEADER_NAME = "X-XSRF-TOKEN";
 export const NETWORK_FAILURE_STATUS = 0;
 
 export const REQUEST_TIMEOUT_MILLISECONDS = 15000;
+
+export const PAGE_QUERY_PARAMETER = "page";

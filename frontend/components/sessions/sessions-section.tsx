@@ -21,14 +21,10 @@ import { NotificationType } from "@/enums/ui/notification-type";
 import { useNotification } from "@/hooks/shared/use-notification";
 import type { SessionList } from "@/hooks/sessions/use-session-list";
 import { ApiError } from "@/lib/http/api-error";
+import { isHandledByRouteGuards } from "@/lib/http/is-handled-by-route-guards";
 import { messageForError } from "@/lib/http/message-for-error";
 import type { SessionSectionCopy } from "@/types/sessions/session-section-copy";
 import type { UserSession } from "@/types/sessions/user-session";
-
-const SILENTLY_HANDLED_ERROR_CODES: ReadonlySet<ErrorCode> = new Set([
-  ErrorCode.Unauthenticated,
-  ErrorCode.PasswordChangeRequired,
-]);
 
 interface SessionsSectionProps extends SessionList {
   copy: SessionSectionCopy;
@@ -51,7 +47,7 @@ export function SessionsSection({
     state.status === LoadStatus.Loaded && state.sessions.some((session) => !session.is_current);
 
   function handleFailure(error: ApiError | null) {
-    if (error !== null && SILENTLY_HANDLED_ERROR_CODES.has(error.code)) {
+    if (isHandledByRouteGuards(error)) {
       return;
     }
 

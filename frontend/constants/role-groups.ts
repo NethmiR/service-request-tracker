@@ -6,3 +6,5 @@ import { UserRole } from "@/enums/user-role";
 export const ALL_ROLES: readonly UserRole[] = Object.values(UserRole);
 
 export const STAFF_ROLES: readonly UserRole[] = [UserRole.Admin, UserRole.Technician];
+
+export const ADMIN_ROLES: readonly UserRole[] = [UserRole.Admin];
