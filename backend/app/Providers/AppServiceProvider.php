@@ -1,24 +1,15 @@
 <?php
 
+// Registers application wide services and boot time configuration.
+// Later steps add the password policy and strict model behaviour here.
+
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
-    /**
-     * Register any application services.
-     */
-    public function register(): void
-    {
-        //
-    }
+    public function register(): void {}
 
-    /**
-     * Bootstrap any application services.
-     */
-    public function boot(): void
-    {
-        //
-    }
+    public function boot(): void {}
 }
