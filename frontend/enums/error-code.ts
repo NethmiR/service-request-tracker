@@ -4,6 +4,7 @@
 export enum ErrorCode {
   BadRequest = "BAD_REQUEST",
   Unauthenticated = "UNAUTHENTICATED",
+  InvalidCredentials = "INVALID_CREDENTIALS",
   Forbidden = "FORBIDDEN",
   PasswordChangeRequired = "PASSWORD_CHANGE_REQUIRED",
   NotFound = "NOT_FOUND",

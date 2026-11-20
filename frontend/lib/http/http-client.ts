@@ -66,7 +66,7 @@ async function handleResponseError(error: Error): Promise<AxiosResponse> {
 
   const apiError = createApiError(error);
 
-  if (apiError.status === HttpStatus.Unauthorized) {
+  if (apiError.hasCode(ErrorCode.Unauthenticated)) {
     httpEvents.publish(HttpEvent.Unauthenticated);
   }
 

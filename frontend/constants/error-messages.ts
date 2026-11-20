@@ -6,6 +6,7 @@ import { ErrorCode } from "@/enums/error-code";
 export const ERROR_MESSAGES: Record<ErrorCode, string> = {
   [ErrorCode.BadRequest]: "The request could not be processed.",
   [ErrorCode.Unauthenticated]: "Please sign in to continue.",
+  [ErrorCode.InvalidCredentials]: "The email or password is incorrect.",
   [ErrorCode.Forbidden]: "You do not have permission to perform this action.",
   [ErrorCode.PasswordChangeRequired]: "You must change your password before continuing.",
   [ErrorCode.NotFound]: "The requested resource was not found.",

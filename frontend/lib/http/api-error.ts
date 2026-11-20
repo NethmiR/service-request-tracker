@@ -1,5 +1,5 @@
 // The only error type the application sees for failed API calls.
-// Carries the HTTP status, the shared error code, the UI message and field errors.
+// Carries the HTTP status, the shared error code, the UI message, field errors and the retry delay.
 
 import type { ErrorCode } from "@/enums/error-code";
 
@@ -8,19 +8,22 @@ export interface ApiErrorDetails {
   code: ErrorCode;
   message: string;
   fieldErrors?: Record<string, string[]>;
+  retryAfterSeconds: number | null;
 }
 
 export class ApiError extends Error {
   readonly status: number;
   readonly code: ErrorCode;
   readonly fieldErrors: Record<string, string[]>;
+  readonly retryAfterSeconds: number | null;
 
-  constructor({ status, code, message, fieldErrors = {} }: ApiErrorDetails) {
+  constructor({ status, code, message, fieldErrors = {}, retryAfterSeconds }: ApiErrorDetails) {
     super(message);
     this.name = "ApiError";
     this.status = status;
     this.code = code;
     this.fieldErrors = fieldErrors;
+    this.retryAfterSeconds = retryAfterSeconds;
   }
 
   firstFieldError(field: string): string | undefined {
