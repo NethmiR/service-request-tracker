@@ -11,15 +11,16 @@ use App\Models\AuthAuditLog;
 use App\Models\User;
 use Database\Factories\UserFactory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Concerns\InteractsWithFrontendSession;
+use Tests\Concerns\InteractsWithStoredSessions;
 use Tests\TestCase;
 
 class ChangePasswordTest extends TestCase
 {
     use InteractsWithFrontendSession;
+    use InteractsWithStoredSessions;
     use RefreshDatabase;
 
     private const string CHANGE_PASSWORD_ROUTE = '/api/auth/password';
@@ -190,10 +191,5 @@ class ChangePasswordTest extends TestCase
             'password' => $password,
             'password_confirmation' => $confirmation ?? $password,
         ];
-    }
-
-    private function sessionCountFor(User $user): int
-    {
-        return DB::table(config('session.table'))->where('user_id', $user->id)->count();
     }
 }
