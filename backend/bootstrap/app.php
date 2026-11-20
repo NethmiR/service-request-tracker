@@ -5,6 +5,7 @@
 
 use App\Exceptions\ApiExceptionRenderer;
 use App\Exceptions\DomainException;
+use App\Http\Middleware\AddSecurityHeaders;
 use App\Http\Middleware\EnsureJsonResponse;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -17,7 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->prepend(EnsureJsonResponse::class);
+        $middleware->prepend([AddSecurityHeaders::class, EnsureJsonResponse::class]);
         $middleware->statefulApi();
     })
     ->withExceptions(function (Exceptions $exceptions): void {

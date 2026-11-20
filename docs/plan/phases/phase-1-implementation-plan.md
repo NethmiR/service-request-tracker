@@ -12,7 +12,7 @@ These decisions were confirmed before writing this plan and apply to every phase
 
 | Topic | Decision |
 | --- | --- |
-| Backend test database | A dedicated local PostgreSQL database named `service_request_tracker_test`. SQLite is not used, because it cannot prove the check constraints and row locking required later. |
+| Backend test database | An in memory SQLite database, registered for tests only, so no database server is needed and the real database is never touched. SQLite cannot prove the PostgreSQL check constraints or row locking, so moving the tests to a local PostgreSQL database is reconsidered in Phase 6. |
 | Frontend Content Security Policy | A fresh nonce per request generated in `proxy.ts`, as recommended by the Next.js 16 documentation. All pages render dynamically. |
 | Base UI components | Built by hand with Tailwind CSS 4 and the native `<dialog>` element, with `clsx` and `tailwind-merge` for class names. No component library. |
 | PHP target | PHP 8.3. Composer is pinned to the 8.3 platform even though local development runs PHP 8.5 through Herd. Code must not use PHP 8.4 or 8.5 features. |
@@ -312,7 +312,7 @@ Without it, a request that does not ask for JSON would make Laravel try to redir
 | `Permissions-Policy` | `camera=(), microphone=(), geolocation=(), payment=()` |
 | `Strict-Transport-Security` | `max-age=31536000; includeSubDomains`, sent only when the application runs in production |
 
-The middleware also calls `header_remove('X-Powered-By')`, so PHP does not reveal its version. Register it globally with `$middleware->append()`. Hiding the web server version is a server setting and is verified in Phase 8.
+The middleware also calls `header_remove('X-Powered-By')`, so PHP does not reveal its version. Register it globally with `$middleware->prepend()`, ahead of `EnsureJsonResponse`, so it also wraps CORS preflight responses, which Laravel's `HandleCors` middleware answers before the rest of the stack runs. Hiding the web server version is a server setting and is verified in Phase 8.
 
 ### Step B12. Define the central password policy and strict model behaviour
 
@@ -365,11 +365,10 @@ Update the existing local `backend/.env` with the same keys, keeping its real da
 
 **Test database.**
 
-1. Create the database with `createdb -U postgres service_request_tracker_test`.
-2. Add `.env.testing` to `backend/.gitignore`.
-3. Create `backend/.env.testing.example` with placeholders for `DB_HOST=127.0.0.1`, `DB_PORT=5432`, `DB_DATABASE=service_request_tracker_test`, `DB_USERNAME`, `DB_PASSWORD` and `DB_SSLMODE=disable`. Each developer copies it to `.env.testing`. SSL is disabled only for this local test database. Every other environment keeps `require`.
-4. In [phpunit.xml](../../backend/phpunit.xml), remove the `DB_CONNECTION`, `DB_DATABASE` and `DB_URL` entries so the values come from `.env.testing`. Laravel loads that file automatically when `APP_ENV` is `testing`. Keep `SESSION_DRIVER=array` for now. Phase 2 switches it to `database` together with the sessions migration.
-5. Create the `tests/Feature` and `tests/Unit` folders through the tests in Step B14.
+1. In [phpunit.xml](../../backend/phpunit.xml), set `DB_CONNECTION=sqlite`, `DB_DATABASE=:memory:` and an empty `DB_URL`, each with `force="true"` so they always win over the values in `.env`. Keep `SESSION_DRIVER=array` for now. Phase 2 switches it to `database` together with the sessions migration.
+2. In `tests/TestCase.php`, override `createApplication` to register the in memory SQLite connection and make it the default. The connection exists only in tests, so `config/database.php` keeps PostgreSQL as its only connection.
+3. No `.env.testing` file is needed. Tests read the remaining values from `.env`, and the database settings are always overridden, so the real database is never touched. The `.env.testing` entry stays in `backend/.gitignore` in case a developer adds one.
+4. Create the `tests/Feature` and `tests/Unit` folders through the tests in Step B14.
 
 ### Step B14. Write the Phase 1 tests
 
@@ -389,13 +388,13 @@ All tests extend `Tests\TestCase`. Routes that exist only for a test are registe
 
 **`tests/Feature/Infrastructure/SecurityHeadersTest.php`**
 
-- Every response carries the four common security headers.
+- Every response carries the four common security headers, including error responses and CORS preflight responses.
 - `Strict-Transport-Security` is absent in the testing environment and present when the environment is switched to production.
 
 **`tests/Feature/Infrastructure/CorsTest.php`**
 
 - A preflight `OPTIONS` request from the configured frontend origin is allowed with credentials, and the response lists only the allowed methods and headers.
-- A preflight from any other origin receives no `Access-Control-Allow-Origin` header.
+- A preflight from any other origin never receives its own origin in `Access-Control-Allow-Origin`. With a single allowed origin, Laravel always sends the configured frontend origin, and browsers block any request whose origin does not match it.
 
 **`tests/Feature/Infrastructure/PasswordPolicyTest.php`**
 
@@ -405,7 +404,7 @@ All tests extend `Tests\TestCase`. Routes that exist only for a test are registe
 
 - Every `ErrorCode` case returns a status between 400 and 599 and a non empty message. This catches a new case added without a translation.
 
-These Phase 1 tests do not touch the database, but the suite is already configured for PostgreSQL so Phase 2 can use `RefreshDatabase` straight away.
+These Phase 1 tests do not touch the database, but the suite is already configured for SQLite so Phase 2 can use `RefreshDatabase` straight away.
 
 ### Step B15. Format and verify
 
@@ -704,7 +703,7 @@ Each commit leaves both applications working.
 2. `feat(backend): configure Sanctum SPA auth, sessions, CORS and database SSL` covers Steps B3 to B6.
 3. `feat(backend): add shared enums, error shape and central exception renderer` covers Steps B7 to B10.
 4. `feat(backend): add security headers, password policy and strict models` covers Steps B11 and B12.
-5. `test(backend): configure PostgreSQL test database and add infrastructure tests` covers Steps B13 to B15.
+5. `test(backend): configure SQLite test database and add infrastructure tests` covers Steps B13 to B15.
 6. `chore(frontend): tighten TypeScript and ESLint and set up feature folders` covers Steps F1 to F5.
 7. `feat(frontend): add shared enums, constants, types and HTTP layer` covers Steps F6 to F9.
 8. `feat(frontend): add notifications context and base components` covers Steps F10 and F11.
