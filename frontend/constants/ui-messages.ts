@@ -18,4 +18,9 @@ export const UiMessage = {
   GenericErrorDescription: "An unexpected error occurred. Please try again.",
   PreviousPage: "Previous",
   NextPage: "Next",
+  Pagination: "Pagination",
 } as const;
+
+export function formatPageIndicator(currentPage: number, lastPage: number): string {
+  return `Page ${currentPage} of ${lastPage}`;
+}

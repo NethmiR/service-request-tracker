@@ -5,3 +5,5 @@ export const APPLICATION_NAME = "NNR Co Service Request Tracker";
 
 export const APPLICATION_DESCRIPTION =
   "Raise, assign and resolve IT service requests at NNR Co.";
+
+export const DISPLAY_LOCALE = "en-US";

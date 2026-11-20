@@ -6,12 +6,13 @@
 import { UiMessage } from "@/constants/ui-messages";
 import { NotificationType } from "@/enums/ui/notification-type";
 import { useNotification } from "@/hooks/shared/use-notification";
+import { mergeClassNames } from "@/lib/utilities/merge-class-names";
 
 const toneClassNames: Record<NotificationType, string> = {
-  [NotificationType.Success]: "border-l-emerald-500",
-  [NotificationType.Error]: "border-l-red-500",
-  [NotificationType.Info]: "border-l-blue-600",
-  [NotificationType.Warning]: "border-l-amber-500",
+  [NotificationType.Success]: "border-l-success",
+  [NotificationType.Error]: "border-l-danger",
+  [NotificationType.Info]: "border-l-primary",
+  [NotificationType.Warning]: "border-l-warning",
 };
 
 export function ToastRegion() {
@@ -27,14 +28,17 @@ export function ToastRegion() {
         <div
           key={notification.id}
           role={notification.type === NotificationType.Error ? "alert" : "status"}
-          className={`pointer-events-auto flex items-start gap-3 rounded-lg border border-l-4 border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 shadow-lg ${toneClassNames[notification.type]}`}
+          className={mergeClassNames(
+            "pointer-events-auto flex items-start gap-3 rounded-lg border border-l-4 border-border bg-surface px-4 py-3 text-sm text-foreground shadow-lg",
+            toneClassNames[notification.type],
+          )}
         >
           <p className="flex-1">{notification.message}</p>
           <button
             type="button"
             onClick={() => dismiss(notification.id)}
             aria-label={UiMessage.DismissNotification}
-            className="rounded px-1 text-slate-500 hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-blue-600"
+            className="cursor-pointer rounded px-1 text-muted hover:text-foreground focus-visible:outline-2 focus-visible:outline-primary"
           >
             <span aria-hidden="true">&times;</span>
           </button>
