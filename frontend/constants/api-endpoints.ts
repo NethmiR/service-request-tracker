@@ -11,6 +11,8 @@ export enum ApiEndpoint {
   Sessions = "/api/sessions",
   OtherSessions = "/api/sessions/others",
   Users = "/api/users",
+  ServiceRequests = "/api/service-requests",
+  MyServiceRequests = "/api/service-requests/mine",
 }
 
 export function sessionEndpoint(sessionIdentifier: string): string {
@@ -31,4 +33,8 @@ export function userSessionsEndpoint(userId: number): string {
 
 export function userSessionEndpoint(userId: number, sessionIdentifier: string): string {
   return `${userSessionsEndpoint(userId)}/${encodeURIComponent(sessionIdentifier)}`;
+}
+
+export function serviceRequestEndpoint(serviceRequestId: number): string {
+  return `${ApiEndpoint.ServiceRequests}/${serviceRequestId}`;
 }

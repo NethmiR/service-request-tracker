@@ -12,4 +12,5 @@ enum PolicyAbility: string
     use ProvidesValues;
 
     case Delete = 'delete';
+    case View = 'view';
 }

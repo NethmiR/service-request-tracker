@@ -125,9 +125,9 @@ Technicians and admins have a dashboard listing all service requests, newest fir
 
 Status history records hold the following.
 
-- From status
+- From status, which is empty only for the initial record written when the request is created
 - To status
-- Status changed by
+- Status changed by, which is empty only for the initial record written when the request is created
 - Timestamp
 - Remark, which is optional
 
@@ -138,7 +138,7 @@ Assignee history records hold the following.
 - Timestamp
 - Remark, which is mandatory
 
-History records are written only by the system as part of a successful change and are never edited or deleted. A failed change never creates history.
+History records are written only by the system as part of a successful change and are never edited or deleted. Creating a request writes one initial status record in the same transaction, with an empty from status, OPEN as the to status, an empty status changed by and no remark. The empty status changed by marks it as written by the system on creation. Every later status record has both a from status and a user. A failed change never creates history.
 
 ### 3.12 Overview Page
 
@@ -159,7 +159,7 @@ All tables are created through reversible Laravel migrations. Enum columns are b
 - **tags** holds the four predefined tags, seeded from the tag enum.
 - **service_requests** holds title, description, the requesting user, status and timestamps. It is indexed on status, requesting user and creation time.
 - **service_request_tag** links requests and tags with a composite primary key.
-- **service_request_status_histories** holds the request, from status, to status, the user who made the change, the optional remark and the creation time. It is indexed on request and creation time.
+- **service_request_status_histories** holds the request, from status, to status, the user who made the change, the optional remark and the creation time. The from status and the user are empty only for the initial record written when the request is created, and a check constraint keeps them either both empty or both filled. It is indexed on request and creation time.
 - **service_request_assignee_histories** holds the request, the previous assignee, the new assignee, the mandatory remark and the creation time. It is indexed on request and creation time and on the new assignee. The latest record of each request identifies its current assignee.
 
 Seeders create the predefined tags and an initial admin whose credentials come from environment variables. Factories and a development seeder create demo users and requests for local use only.

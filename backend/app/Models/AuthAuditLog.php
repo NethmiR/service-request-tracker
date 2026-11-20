@@ -1,20 +1,20 @@
 <?php
 
 // Represents one authentication event in the append only audit trail.
-// Rows can only be created, and any attempt to update or delete one throws.
+// The AppendOnly trait makes any attempt to update or delete a row throw.
 
 namespace App\Models;
 
 use App\Enums\AuthAuditEvent;
+use App\Models\Concerns\AppendOnly;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use LogicException;
 
 class AuthAuditLog extends Model
 {
-    public const UPDATED_AT = null;
+    use AppendOnly;
 
-    public const string APPEND_ONLY_MESSAGE = 'Authentication audit records are append only and cannot be updated or deleted.';
+    public const UPDATED_AT = null;
 
     protected $fillable = [
         'event',
@@ -33,12 +33,6 @@ class AuthAuditLog extends Model
     public function targetUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'target_user_id');
-    }
-
-    protected static function booted(): void
-    {
-        static::updating(fn (): never => throw new LogicException(self::APPEND_ONLY_MESSAGE));
-        static::deleting(fn (): never => throw new LogicException(self::APPEND_ONLY_MESSAGE));
     }
 
     protected function casts(): array

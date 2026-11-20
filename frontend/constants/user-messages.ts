@@ -45,6 +45,8 @@ export const UserMessage = {
   ResetOwnDescription:
     "A new temporary password replaces yours. Every one of your sessions ends, including this one, and you must sign in again and change the password.",
   PasswordReset: "The password has been reset.",
+  OwnPasswordReset:
+    "Your password has been reset. Sign in with the temporary password and choose a new one.",
   TemporaryPasswordTitle: "Temporary password",
   TemporaryPasswordDescription: "Share this password with the user through a secure channel.",
   TemporaryPasswordWarning:

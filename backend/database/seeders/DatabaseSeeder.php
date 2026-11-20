@@ -1,7 +1,7 @@
 <?php
 
 // Entry point for seeding data required in every environment.
-// Seeds the initial admin, and Phase 5 adds the predefined tags.
+// Seeds the predefined tags first, then the initial admin.
 
 namespace Database\Seeders;
 
@@ -14,6 +14,7 @@ class DatabaseSeeder extends Seeder
 
     public function run(): void
     {
+        $this->call(TagSeeder::class);
         $this->call(InitialAdminSeeder::class);
     }
 }

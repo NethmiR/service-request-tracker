@@ -9,6 +9,7 @@ export const NavigationMessage = {
   NavigationLabel: "Main navigation",
   Overview: "Overview",
   MyServiceRequests: "My requests",
+  NewServiceRequest: "New request",
   Users: "Users",
   Account: "Account",
   OpenMenu: "Open menu",
@@ -25,6 +26,11 @@ export const NAVIGATION_ITEMS: readonly NavigationItem[] = [
   {
     route: AppRoute.MyServiceRequests,
     label: NavigationMessage.MyServiceRequests,
+    allowedRoles: ALL_ROLES,
+  },
+  {
+    route: AppRoute.NewServiceRequest,
+    label: NavigationMessage.NewServiceRequest,
     allowedRoles: ALL_ROLES,
   },
   {
