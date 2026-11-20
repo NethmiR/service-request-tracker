@@ -1,7 +1,7 @@
 <?php
 
-// Lists and ends the active sessions of the signed in user and records each ended session in the audit table.
-// The current session is never ended here, because signing out is the only way to end it.
+// Lists and ends the active sessions of a user on behalf of the owner or an admin, and records each ended session in the audit table.
+// The acting user's current session is never ended here, because signing out is the only way to end it.
 
 namespace App\Services\Sessions;
 
@@ -26,52 +26,72 @@ final class SessionManagementService
 
     public function listOwnSessions(User $owner, string $currentSessionId): Collection
     {
-        return $this->activeSessionRepository->forUser($owner, $currentSessionId);
+        return $this->listUserSessions($owner, $currentSessionId);
     }
 
     public function findOwnSession(User $owner, string $identifier, string $currentSessionId): ActiveSession
     {
-        return $this->activeSessionRepository->findForUser($owner, $identifier, $currentSessionId)
-            ?? throw new SessionNotFoundException;
+        return $this->findUserSession($owner, $identifier, $currentSessionId);
     }
 
     public function clearOwnSession(User $owner, ActiveSession $session, RequestContext $context): void
+    {
+        $this->clearUserSession($owner, $owner, $session, $context);
+    }
+
+    public function clearOtherOwnSessions(User $owner, string $currentSessionId, RequestContext $context): int
+    {
+        return $this->clearUserSessions($owner, $owner, $currentSessionId, $context);
+    }
+
+    public function listUserSessions(User $owner, string $actorSessionId): Collection
+    {
+        return $this->activeSessionRepository->forUser($owner, $actorSessionId);
+    }
+
+    public function findUserSession(User $owner, string $identifier, string $actorSessionId): ActiveSession
+    {
+        return $this->activeSessionRepository->findForUser($owner, $identifier, $actorSessionId)
+            ?? throw new SessionNotFoundException;
+    }
+
+    public function clearUserSession(User $actor, User $owner, ActiveSession $session, RequestContext $context): void
     {
         if ($session->isCurrent) {
             throw new CurrentSessionNotClearableException;
         }
 
-        DB::transaction(function () use ($owner, $session, $context): void {
+        DB::transaction(function () use ($actor, $owner, $session, $context): void {
             if ($this->sessionTerminator->terminateSession($owner, $session->sessionId) === 0) {
                 throw new SessionNotFoundException;
             }
 
-            $this->auditLogger->record($this->sessionClearedByOwnerEntry($owner, $context));
+            $this->auditLogger->record($this->sessionClearedEntry($actor, $owner, $context));
         });
     }
 
-    public function clearOtherOwnSessions(User $owner, string $currentSessionId, RequestContext $context): int
+    public function clearUserSessions(User $actor, User $owner, string $actorSessionId, RequestContext $context): int
     {
-        return DB::transaction(function () use ($owner, $currentSessionId, $context): int {
+        return DB::transaction(function () use ($actor, $owner, $actorSessionId, $context): int {
             $endedSessions = $this->activeSessionRepository
-                ->forUser($owner, $currentSessionId)
+                ->forUser($owner, $actorSessionId)
                 ->reject(fn (ActiveSession $session): bool => $session->isCurrent);
 
-            $this->sessionTerminator->terminateOtherSessions($owner, $currentSessionId);
+            $this->sessionTerminator->terminateOtherSessions($owner, $actorSessionId);
 
             foreach ($endedSessions as $endedSession) {
-                $this->auditLogger->record($this->sessionClearedByOwnerEntry($owner, $context));
+                $this->auditLogger->record($this->sessionClearedEntry($actor, $owner, $context));
             }
 
             return $endedSessions->count();
         });
     }
 
-    private function sessionClearedByOwnerEntry(User $owner, RequestContext $context): AuthAuditEntry
+    private function sessionClearedEntry(User $actor, User $owner, RequestContext $context): AuthAuditEntry
     {
         return new AuthAuditEntry(
-            AuthAuditEvent::SessionClearedByOwner,
-            $owner,
+            $actor->is($owner) ? AuthAuditEvent::SessionClearedByOwner : AuthAuditEvent::SessionClearedByAdmin,
+            $actor,
             $owner,
             null,
             $context,
