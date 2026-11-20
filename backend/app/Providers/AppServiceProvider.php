@@ -1,14 +1,19 @@
 <?php
 
 // Registers application wide services and boot time configuration.
-// Defines the central password policy and the strict model and database safeguards.
+// Defines the central password policy, the rate limiters and the strict model and database safeguards.
 
 namespace App\Providers;
 
+use App\Enums\RateLimiterName;
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
+use Laravel\Sanctum\Sanctum;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -23,6 +28,10 @@ class AppServiceProvider extends ServiceProvider
         Model::shouldBeStrict(! $this->app->isProduction());
 
         DB::prohibitDestructiveCommands($this->app->isProduction());
+
+        Sanctum::getAccessTokenFromRequestUsing(fn (): ?string => null);
+
+        $this->configureRateLimiting();
     }
 
     private function passwordPolicy(): Password
@@ -33,5 +42,20 @@ class AppServiceProvider extends ServiceProvider
             ->symbols();
 
         return $this->app->isProduction() ? $policy->uncompromised() : $policy;
+    }
+
+    private function configureRateLimiting(): void
+    {
+        RateLimiter::for(
+            RateLimiterName::Api->value,
+            fn (Request $request): Limit => Limit::perMinute((int) config('rate_limits.api.max_requests_per_minute'))
+                ->by((string) ($request->user()?->getAuthIdentifier() ?? $request->ip())),
+        );
+
+        RateLimiter::for(
+            RateLimiterName::PasswordChange->value,
+            fn (Request $request): Limit => Limit::perMinute((int) config('rate_limits.password_change.max_attempts_per_minute'))
+                ->by((string) ($request->user()?->getAuthIdentifier() ?? $request->ip())),
+        );
     }
 }

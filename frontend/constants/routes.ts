@@ -1,5 +1,7 @@
 // Every page path in the application, defined in one place.
-// Dynamic paths are built through the helper functions below.
+// Also maps each role to its home page and lists the pages open to signed out users.
+
+import { UserRole } from "@/enums/user-role";
 
 export enum AppRoute {
   Root = "/",
@@ -12,6 +14,14 @@ export enum AppRoute {
   Users = "/users",
   Account = "/account",
 }
+
+export const ROLE_HOME_ROUTES: Record<UserRole, AppRoute> = {
+  [UserRole.Admin]: AppRoute.Overview,
+  [UserRole.Technician]: AppRoute.Overview,
+  [UserRole.Requester]: AppRoute.MyServiceRequests,
+};
+
+export const PUBLIC_ROUTES: ReadonlySet<string> = new Set([AppRoute.SignIn]);
 
 export function serviceRequestDetailRoute(serviceRequestId: number): string {
   return `${AppRoute.ServiceRequests}/${serviceRequestId}`;

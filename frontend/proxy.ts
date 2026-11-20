@@ -1,5 +1,6 @@
 // Next.js proxy that runs before every page request.
-// Generates a fresh CSP nonce and forwards it to Next.js and the browser through headers.
+// Redirects visitors without a session cookie to sign in, otherwise generates a fresh CSP nonce
+// and forwards it to Next.js and the browser through headers.
 
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
@@ -8,8 +9,15 @@ import {
   NONCE_HEADER,
   buildContentSecurityPolicy,
 } from "@/lib/security/content-security-policy";
+import { getSignedOutRedirect } from "@/lib/routing/signed-out-redirect";
 
 export function proxy(request: NextRequest) {
+  const signedOutRedirect = getSignedOutRedirect(request);
+
+  if (signedOutRedirect) {
+    return signedOutRedirect;
+  }
+
   const nonce = btoa(crypto.randomUUID());
   const contentSecurityPolicy = buildContentSecurityPolicy(nonce);
 

@@ -1,9 +1,10 @@
 // Converts any failed request into the typed ApiError.
 // Bodies that do not match the shared error shape become a generic server error.
+// Rate limited responses also carry the Retry-After delay in whole seconds.
 
-import { isAxiosError, type AxiosError } from "axios";
+import { AxiosHeaders, isAxiosError, type AxiosError, type AxiosResponse } from "axios";
 import { ERROR_MESSAGES } from "@/constants/error-messages";
-import { NETWORK_FAILURE_STATUS } from "@/constants/http";
+import { HttpHeader, HttpStatus, NETWORK_FAILURE_STATUS } from "@/constants/http";
 import { ErrorCode } from "@/enums/error-code";
 import { ApiError } from "@/lib/http/api-error";
 import type { ApiErrorResponse } from "@/types/shared/api-error-response";
@@ -15,6 +16,8 @@ export type ReceivedErrorBody =
   | undefined;
 
 const errorCodeValues: ReadonlySet<string> = new Set(Object.values(ErrorCode));
+
+const WHOLE_SECONDS_PATTERN = /^\d+$/;
 
 function isErrorCode(value: string): value is ErrorCode {
   return errorCodeValues.has(value);
@@ -54,12 +57,38 @@ function readFieldErrors(body: ReceivedErrorBody): Record<string, string[]> {
   );
 }
 
+function readRetryAfterSeconds(response: AxiosResponse<ReceivedErrorBody>): number | null {
+  if (response.status !== HttpStatus.TooManyRequests) {
+    return null;
+  }
+
+  const { headers } = response;
+  const headerValue =
+    headers instanceof AxiosHeaders
+      ? headers.get(HttpHeader.RetryAfter)
+      : headers[HttpHeader.RetryAfter.toLowerCase()];
+  const retryAfter = typeof headerValue === "number" ? String(headerValue) : headerValue;
+
+  if (typeof retryAfter !== "string" || !WHOLE_SECONDS_PATTERN.test(retryAfter.trim())) {
+    return null;
+  }
+
+  return Number.parseInt(retryAfter.trim(), 10);
+}
+
 function buildApiError(
   status: number,
   code: ErrorCode,
   fieldErrors: Record<string, string[]> = {},
+  retryAfterSeconds: number | null = null,
 ): ApiError {
-  return new ApiError({ status, code, message: ERROR_MESSAGES[code], fieldErrors });
+  return new ApiError({
+    status,
+    code,
+    message: ERROR_MESSAGES[code],
+    fieldErrors,
+    retryAfterSeconds,
+  });
 }
 
 function fromAxiosError(error: AxiosError<ReceivedErrorBody>): ApiError {
@@ -75,7 +104,12 @@ function fromAxiosError(error: AxiosError<ReceivedErrorBody>): ApiError {
     return buildApiError(response.status, ErrorCode.ServerError);
   }
 
-  return buildApiError(response.status, code, readFieldErrors(response.data));
+  return buildApiError(
+    response.status,
+    code,
+    readFieldErrors(response.data),
+    readRetryAfterSeconds(response),
+  );
 }
 
 export function createApiError(error: Error): ApiError {

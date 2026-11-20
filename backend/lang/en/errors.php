@@ -6,6 +6,7 @@
 return [
     'BAD_REQUEST' => 'The request could not be processed.',
     'UNAUTHENTICATED' => 'Please sign in to continue.',
+    'INVALID_CREDENTIALS' => 'The email or password is incorrect.',
     'FORBIDDEN' => 'You do not have permission to perform this action.',
     'PASSWORD_CHANGE_REQUIRED' => 'You must change your password before continuing.',
     'NOT_FOUND' => 'The requested resource was not found.',

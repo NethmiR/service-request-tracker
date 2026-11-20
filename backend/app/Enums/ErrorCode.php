@@ -18,6 +18,7 @@ enum ErrorCode: string
 
     case BadRequest = 'BAD_REQUEST';
     case Unauthenticated = 'UNAUTHENTICATED';
+    case InvalidCredentials = 'INVALID_CREDENTIALS';
     case Forbidden = 'FORBIDDEN';
     case PasswordChangeRequired = 'PASSWORD_CHANGE_REQUIRED';
     case NotFound = 'NOT_FOUND';
@@ -36,7 +37,7 @@ enum ErrorCode: string
     {
         return match ($this) {
             self::BadRequest => Response::HTTP_BAD_REQUEST,
-            self::Unauthenticated => Response::HTTP_UNAUTHORIZED,
+            self::Unauthenticated, self::InvalidCredentials => Response::HTTP_UNAUTHORIZED,
             self::Forbidden, self::PasswordChangeRequired => Response::HTTP_FORBIDDEN,
             self::NotFound => Response::HTTP_NOT_FOUND,
             self::MethodNotAllowed => Response::HTTP_METHOD_NOT_ALLOWED,
