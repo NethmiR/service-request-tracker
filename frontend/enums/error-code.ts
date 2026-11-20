@@ -12,6 +12,7 @@ export enum ErrorCode {
   Conflict = "CONFLICT",
   InvalidStatusTransition = "INVALID_STATUS_TRANSITION",
   StatusUnchanged = "STATUS_UNCHANGED",
+  AssigneeUnchanged = "ASSIGNEE_UNCHANGED",
   ConcurrentUpdate = "CONCURRENT_UPDATE",
   CurrentSessionNotClearable = "CURRENT_SESSION_NOT_CLEARABLE",
   CsrfTokenMismatch = "CSRF_TOKEN_MISMATCH",

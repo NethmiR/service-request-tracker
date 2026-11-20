@@ -8,6 +8,7 @@ import type { NavigationItem } from "@/types/shared/navigation-item";
 export const NavigationMessage = {
   NavigationLabel: "Main navigation",
   Overview: "Overview",
+  ServiceRequests: "Requests",
   MyServiceRequests: "My requests",
   NewServiceRequest: "New request",
   Users: "Users",
@@ -21,6 +22,11 @@ export const NAVIGATION_ITEMS: readonly NavigationItem[] = [
   {
     route: AppRoute.Overview,
     label: NavigationMessage.Overview,
+    allowedRoles: STAFF_ROLES,
+  },
+  {
+    route: AppRoute.ServiceRequests,
+    label: NavigationMessage.ServiceRequests,
     allowedRoles: STAFF_ROLES,
   },
   {
