@@ -58,6 +58,11 @@ class ShowServiceRequestTest extends TestCase
                     'requested_by' => ['id' => $requester->id, 'name' => $requester->name],
                     'assignee' => null,
                     'created_at' => $serviceRequest->created_at->toIso8601ZuluString(),
+                    'available_actions' => [
+                        'can_assign_to_self' => false,
+                        'can_reassign' => false,
+                        'allowed_statuses' => [],
+                    ],
                     'status_history' => [
                         [
                             'id' => $initialRecord->id,

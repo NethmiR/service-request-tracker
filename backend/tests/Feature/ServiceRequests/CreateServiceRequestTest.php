@@ -44,6 +44,7 @@ class CreateServiceRequestTest extends TestCase
         'requested_by',
         'assignee',
         'created_at',
+        'available_actions',
         'description',
         'status_history',
         'assignee_history',

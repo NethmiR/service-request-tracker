@@ -37,6 +37,11 @@ class ServiceRequestAccessTest extends TestCase
         'service-requests.store' => ['POST', '/api/service-requests'],
         'service-requests.mine' => ['GET', '/api/service-requests/mine'],
         'service-requests.show' => ['GET', self::SHOW_ROUTE],
+        'service-requests.index' => ['GET', '/api/service-requests'],
+        'service-requests.assignees' => ['GET', '/api/service-requests/assignees'],
+        'service-requests.assign' => ['POST', self::SHOW_ROUTE.'/assignment'],
+        'service-requests.reassign' => ['POST', self::SHOW_ROUTE.'/reassignment'],
+        'service-requests.status' => ['PATCH', self::SHOW_ROUTE.'/status'],
     ];
 
     public static function serviceRequestRoutes(): array

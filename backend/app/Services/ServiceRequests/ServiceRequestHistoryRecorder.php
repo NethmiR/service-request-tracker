@@ -5,8 +5,11 @@
 
 namespace App\Services\ServiceRequests;
 
+use App\Enums\ServiceRequestStatus;
 use App\Models\ServiceRequest;
+use App\Models\ServiceRequestAssigneeHistory;
 use App\Models\ServiceRequestStatusHistory;
+use App\Models\User;
 
 final class ServiceRequestHistoryRecorder
 {
@@ -20,6 +23,44 @@ final class ServiceRequestHistoryRecorder
         ]);
 
         $record->serviceRequest()->associate($serviceRequest);
+        $record->save();
+
+        return $record;
+    }
+
+    public function recordStatusChange(
+        ServiceRequest $serviceRequest,
+        ServiceRequestStatus $fromStatus,
+        ServiceRequestStatus $toStatus,
+        User $actor,
+        ?string $remark,
+    ): ServiceRequestStatusHistory {
+        $record = new ServiceRequestStatusHistory([
+            'from_status' => $fromStatus,
+            'to_status' => $toStatus,
+            'remark' => $remark,
+        ]);
+
+        $record->serviceRequest()->associate($serviceRequest);
+        $record->changedBy()->associate($actor);
+        $record->save();
+
+        return $record;
+    }
+
+    public function recordAssigneeChange(
+        ServiceRequest $serviceRequest,
+        ?User $previousAssignee,
+        User $newAssignee,
+        string $remark,
+    ): ServiceRequestAssigneeHistory {
+        $record = new ServiceRequestAssigneeHistory([
+            'remark' => $remark,
+        ]);
+
+        $record->serviceRequest()->associate($serviceRequest);
+        $record->assignedFrom()->associate($previousAssignee);
+        $record->assignedTo()->associate($newAssignee);
         $record->save();
 
         return $record;
