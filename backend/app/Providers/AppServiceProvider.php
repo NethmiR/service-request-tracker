@@ -10,7 +10,9 @@ use App\Data\Sessions\ActiveSession;
 use App\Enums\GateAbility;
 use App\Enums\RateLimiterName;
 use App\Enums\UserRole;
+use App\Models\ServiceRequest;
 use App\Models\User;
+use App\Policies\ServiceRequestPolicy;
 use App\Policies\SessionPolicy;
 use App\Services\Users\DisplayOnceTemporaryPasswordDelivery;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -94,6 +96,12 @@ class AppServiceProvider extends ServiceProvider
     {
         Gate::define(GateAbility::ManageUsers->value, fn (User $user): bool => $user->hasRole(UserRole::Admin));
 
+        Gate::define(
+            GateAbility::ViewAllServiceRequests->value,
+            fn (User $user): bool => in_array($user->role, UserRole::staff(), true),
+        );
+
         Gate::policy(ActiveSession::class, SessionPolicy::class);
+        Gate::policy(ServiceRequest::class, ServiceRequestPolicy::class);
     }
 }

@@ -9,6 +9,9 @@ use App\Http\Controllers\Auth\ChangePasswordController;
 use App\Http\Controllers\Auth\CurrentUserController;
 use App\Http\Controllers\Auth\SignInController;
 use App\Http\Controllers\Auth\SignOutController;
+use App\Http\Controllers\ServiceRequests\CreateServiceRequestController;
+use App\Http\Controllers\ServiceRequests\ListOwnServiceRequestsController;
+use App\Http\Controllers\ServiceRequests\ShowServiceRequestController;
 use App\Http\Controllers\Sessions\ClearOtherSessionsController;
 use App\Http\Controllers\Sessions\ClearSessionController;
 use App\Http\Controllers\Sessions\ListSessionsController;
@@ -44,6 +47,12 @@ Route::middleware(['auth:sanctum', ThrottleRequests::using(RateLimiterName::Api-
         Route::delete('sessions/{sessionIdentifier}', ClearSessionController::class)
             ->where('sessionIdentifier', SessionIdentifier::PATTERN)
             ->name('sessions.destroy');
+
+        Route::post('service-requests', CreateServiceRequestController::class)->name('service-requests.store');
+        Route::get('service-requests/mine', ListOwnServiceRequestsController::class)->name('service-requests.mine');
+        Route::get('service-requests/{serviceRequest}', ShowServiceRequestController::class)
+            ->whereNumber('serviceRequest')
+            ->name('service-requests.show');
 
         Route::middleware(Authorize::using(GateAbility::ManageUsers->value))->group(function (): void {
             Route::get('users', ListUsersController::class)->name('users.index');
