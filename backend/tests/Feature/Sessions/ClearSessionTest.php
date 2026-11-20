@@ -9,12 +9,14 @@ use App\Enums\ErrorCode;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Tests\Concerns\InteractsWithAuditLogs;
 use Tests\Concerns\InteractsWithFrontendSession;
 use Tests\Concerns\InteractsWithStoredSessions;
 use Tests\TestCase;
 
 class ClearSessionTest extends TestCase
 {
+    use InteractsWithAuditLogs;
     use InteractsWithFrontendSession;
     use InteractsWithStoredSessions;
     use RefreshDatabase;

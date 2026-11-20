@@ -8,12 +8,14 @@ namespace Tests\Feature\Sessions;
 use App\Enums\ErrorCode;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\InteractsWithAuditLogs;
 use Tests\Concerns\InteractsWithFrontendSession;
 use Tests\Concerns\InteractsWithStoredSessions;
 use Tests\TestCase;
 
 class ClearOtherSessionsTest extends TestCase
 {
+    use InteractsWithAuditLogs;
     use InteractsWithFrontendSession;
     use InteractsWithStoredSessions;
     use RefreshDatabase;

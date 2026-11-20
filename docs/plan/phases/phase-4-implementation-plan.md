@@ -370,7 +370,7 @@ ADMIN_PASSWORD_RESET_MAX_ATTEMPTS_PER_MINUTE=10
 
 All feature tests use `RefreshDatabase` and `InteractsWithFrontendSession`. Session tests also use `InteractsWithStoredSessions`.
 
-**`tests/Concerns/InteractsWithAuditLogs.php`** is a new trait with `auditLogsFor(AuthAuditEvent $event): Collection`. Move `sessionClearedByOwnerLogs()` from `InteractsWithStoredSessions` onto it as a call with `SessionClearedByOwner`, and update the Phase 3 tests that use it.
+**`tests/Concerns/InteractsWithAuditLogs.php`** is a new trait with `auditLogsFor(AuthAuditEvent $event): Collection`. Move `sessionClearedByOwnerLogs()` from `InteractsWithStoredSessions` onto it as a call with `SessionClearedByOwner`, and add the trait to the Phase 3 tests that use it, whose test bodies stay unchanged.
 
 **`tests/Unit/Services/Users/TemporaryPasswordGeneratorTest.php`**
 
@@ -413,7 +413,7 @@ All feature tests use `RefreshDatabase` and `InteractsWithFrontendSession`. Sess
 - The new user can sign in with the temporary password and the sign in response reports `password_change_required` as `true`.
 - Missing fields, an invalid email, a name over 255 characters and an unknown role each return `422` on the right field and create no user and no audit row.
 - A duplicate email, including one that differs only in case or surrounding spaces, returns `422` on `email`.
-- A race on the same email is simulated by a `User::creating` listener, registered only in that test, that inserts a row with the same email just before the real insert. The response is `422` on `email`, only the listener's row exists and no audit row is written.
+- A race on the same email is simulated by storing a user with that email first and then swapping the validator's presence verifier, only in that test, for one that reports no existing rows, so the `unique` rule passes as it would before a competing admin commits. The database unique index then rejects the insert. The response is `422` on `email`, only the earlier row exists and no audit row is written. A `User::creating` listener cannot simulate the race, because its insert runs inside the service transaction and is rolled back together with the failed insert.
 - Client supplied `password`, `password_changed_at` or `id` fields are ignored.
 - Exceeding the user creation limit returns `429`.
 

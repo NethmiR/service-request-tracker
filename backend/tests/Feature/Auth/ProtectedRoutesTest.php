@@ -5,7 +5,9 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Enums\GateAbility;
 use App\Http\Middleware\EnsurePasswordChanged;
+use Illuminate\Auth\Middleware\Authorize;
 use Illuminate\Routing\Route as RegisteredRoute;
 use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
@@ -17,6 +19,8 @@ class ProtectedRoutesTest extends TestCase
     private const string AUTHENTICATION_MIDDLEWARE = 'auth:sanctum';
 
     private const string SIGN_IN_ROUTE_NAME = 'auth.sign-in';
+
+    private const string USER_MANAGEMENT_ROUTE_PREFIX = 'users.';
 
     private const array ALLOWED_WHILE_PASSWORD_CHANGE_PENDING = [
         'auth.user',
@@ -52,6 +56,28 @@ class ProtectedRoutesTest extends TestCase
             }
 
             if (! in_array(EnsurePasswordChanged::class, $route->gatherMiddleware(), true)) {
+                $unguarded[] = $route->uri();
+            }
+        }
+
+        $this->assertSame([], $unguarded);
+    }
+
+    public function test_every_user_management_route_requires_the_manage_users_gate(): void
+    {
+        $gateMiddleware = Authorize::using(GateAbility::ManageUsers->value);
+
+        $userManagementRoutes = array_filter(
+            $this->apiRoutes(),
+            fn (RegisteredRoute $route): bool => str_starts_with((string) $route->getName(), self::USER_MANAGEMENT_ROUTE_PREFIX),
+        );
+
+        $this->assertNotEmpty($userManagementRoutes);
+
+        $unguarded = [];
+
+        foreach ($userManagementRoutes as $route) {
+            if (! in_array($gateMiddleware, $route->gatherMiddleware(), true)) {
                 $unguarded[] = $route->uri();
             }
         }
