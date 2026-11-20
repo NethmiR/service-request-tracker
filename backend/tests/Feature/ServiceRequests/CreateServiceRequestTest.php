@@ -103,7 +103,8 @@ class CreateServiceRequestTest extends TestCase
             ->assertJsonPath('data.tags', [ServiceRequestTag::Hardware->value, ServiceRequestTag::Network->value])
             ->assertJsonPath('data.requested_by', ['id' => $requester->id, 'name' => $requester->name])
             ->assertJsonPath('data.assignee', null)
-            ->assertJsonPath('data.assignee_history', []);
+            ->assertJsonPath('data.assignee_history', [])
+            ->assertJsonPath('data.available_actions', ['can_assign_to_self' => false, 'can_reassign' => false, 'allowed_statuses' => []]);
 
         $this->assertEqualsCanonicalizing(self::DETAIL_FIELDS, array_keys($response->json('data')));
 

@@ -2,7 +2,7 @@
 
 ## 1. Purpose
 
-This document breaks Phase 6 of the [implementation plan](../implementation-plan.md) into ordered, verifiable steps. Phase 6 delivers the full support workflow with integrity under concurrency. On the backend it adds the request dashboard for technicians and admins, self assignment of open requests, reassignment by the current assignee, status changes by the current assignee and a list of the staff users a request can be reassigned to. Every change locks the request row, re-validates the latest stored state and writes its history records in one transaction. The transition rules live in the status enum, the workflow rules live in one workflow service, and every request response tells the frontend which actions the viewing user may take. It also extends the development seeder with requests that moved through the workflow, and adds an opt in PostgreSQL test group that proves the row locking and the check constraints. On the frontend it adds the dashboard page with the assign to me action, the reassign dialog and the status change controls on the request detail page, and reloads the latest request after a conflict response.
+This document breaks Phase 6 of the [implementation plan](../implementation-plan.md) into ordered, verifiable steps. Phase 6 delivers the full support workflow with integrity under concurrency. On the backend it adds the request dashboard for technicians and admins, self assignment of open requests, reassignment by the current assignee, status changes by the current assignee and a list of the staff users a request can be reassigned to. Every change locks the request row, re-validates the latest stored state and writes its history records in one transaction. The transition rules live in the status enum, the workflow rules live in one workflow service, and every request response tells the frontend which actions the viewing user may take. It also extends the development seeder with requests that moved through the workflow. All tests run on SQLite. On the frontend it adds the dashboard page with the assign to me action, the reassign dialog and the status change controls on the request detail page, and reloads the latest request after a conflict response.
 
 Every step follows the main plan, in particular sections 2 (User Roles and Access), 3.8 (Request Dashboard), 3.9 (Assignment), 3.10 (Status Workflow), 3.11 (History Records), 5 (Security Requirements) and 6 (Engineering Standards). It also keeps every convention set in the [Phase 1 plan](phase-1-implementation-plan.md), the [Phase 2 plan](phase-2-implementation-plan.md), the [Phase 3 plan](phase-3-implementation-plan.md), the [Phase 4 plan](phase-4-implementation-plan.md) and the [Phase 5 plan](phase-5-implementation-plan.md), such as the file header comments, enum naming, snake_case JSON, the single error shape, ISO 8601 UTC timestamps, the `EnsurePasswordChanged` route group, the middleware priority list, the page size of 15, the `UserReferenceResource` for people on request screens and the shared paginated and single resource hooks. Where this document and the main plan disagree, the main plan wins and this document must be corrected. Step B1 corrects the main plan first, because one confirmed decision below changes section 3.9.
 
@@ -21,7 +21,7 @@ These decisions were confirmed before writing this plan.
 | Reopening a resolved request | The current assignee may move a `RESOLVED` request back to `ASSIGNED` or `IN_PROGRESS`, because resolved work sometimes has to continue. This confirms the second assumption in section 8 of the main plan. |
 | Allowed actions | The backend tells the frontend which actions the viewing user may take. The summary and detail resources gain an `available_actions` object with `can_assign_to_self`, `can_reassign` and `allowed_statuses`, worked out from the central rules for the user who sends the request. The frontend shows controls only from this object and never repeats the rules. |
 | Assignee choices | The reassign list holds every technician and admin, including users who still have a pending password change. The current assignee is left out of the list on the frontend and rejected by the backend. |
-| Test database | The existing SQLite suite stays as it is. A new opt in PHPUnit group named `postgres` runs against a separate local PostgreSQL test database. It proves the row locking with two real connections and proves the check constraints. The group is skipped when that database is not configured, so `composer test` keeps working without PostgreSQL. This settles the question that the Phase 1 plan left open for Phase 6. |
+| Test database | Every test runs on the in memory SQLite database, and no PostgreSQL test database is added. SQLite ignores `lockForUpdate` and skips the check constraints, so the tests prove the re-validation under the lock and the single transaction deterministically with stale model instances, and the row locking and the check constraints are verified manually against the development database in section 7. This settles the question that the Phase 1 plan left open for Phase 6. |
 
 ### 2.2 Decisions Made in This Plan
 
@@ -44,8 +44,6 @@ The following smaller decisions are made in this plan and are listed here so the
 | Dashboard order and size | Newest first, ordered by `created_at` descending and then by `id` descending, 15 requests per page, the same as My Requests. No search or filter. |
 | Dashboard fields | The dashboard reuses `ServiceRequestSummaryResource`, now with `available_actions`. My Requests returns the same object, which shows all actions as unavailable for a requester. |
 | Rate limit | The workflow endpoints share the per user `api` limiter. Section 5.5 of the main plan names its own limits only for sign in, password change, admin password reset and user creation. |
-| PostgreSQL test safety | The PostgreSQL test case refuses to run unless the configured database name ends with `_test`, because the test group truncates every table. A wrong value can never wipe the development database. |
-| Lock proof without threads | PHP tests run in one process, so the lock test holds the row lock on a second connection and sets a short `lock_timeout` on the main connection. The blocked workflow call fails with PostgreSQL's lock timeout error and writes nothing. After the competing change commits, the same call returns `409 CONCURRENT_UPDATE`. Together these prove that changes are serialized and that exactly one of two competing self assignments succeeds. |
 | After assign to me on the dashboard | The user stays on the dashboard. A success notification is shown and the current page reloads, so the row shows the new assignee. |
 | Conflict handling on the frontend | Any `409` response, and a `403 FORBIDDEN` from a workflow call, means the request changed under the user. The frontend closes the open dialog, shows the error message from `ERROR_MESSAGES` as an error notification and reloads the request or the dashboard page. |
 | Detail page back link | Technicians and admins go back to the dashboard. Requesters go back to My requests, as before. |
@@ -433,36 +431,9 @@ In [DevelopmentSeeder.php](../../../backend/database/seeders/DevelopmentSeeder.p
 
 Running the seeder twice still creates no duplicate users. It adds another set of requests, as it did in Phase 5.
 
-### Step B16. Add the PostgreSQL test group
+### Step B16. Keep the test suite on SQLite
 
-**Configuration.** Create **`config/postgres_testing.php`**. It reads `TEST_POSTGRES_HOST`, `TEST_POSTGRES_PORT`, `TEST_POSTGRES_DATABASE`, `TEST_POSTGRES_USERNAME`, `TEST_POSTGRES_PASSWORD` and `TEST_POSTGRES_SSLMODE`, the last one defaulting to `require` like the main connection. Following Laravel convention, `env()` is called only in config files. The header comment says the values are used only by the `postgres` test group.
-
-**Test case.** Create **`tests/PostgresTestCase.php`**, an abstract class that extends `Tests\TestCase`.
-
-- `public const string GROUP = 'postgres';` names the PHPUnit group. Test classes declare `#[Group(PostgresTestCase::GROUP)]`.
-- `createApplication()` calls the parent, then registers two PostgreSQL connections from `config('postgres_testing')`, `pgsql_testing` and `pgsql_testing_competitor`, and makes `pgsql_testing` the default. The second connection exists only so a test can hold a lock while the application works on the first one.
-- When the database name is empty, it calls `markTestSkipped()` with a message held in a constant that names the environment variables to set.
-- When the database name does not end with `_test`, held in a constant, it throws a `RuntimeException` with a clear message and never touches the database.
-- It uses Laravel's `DatabaseTruncation` trait instead of `RefreshDatabase`. A row written inside the test transaction would be invisible to the second connection, so the data must be committed. Truncation empties every table after each test.
-- Its `setUp()` seeds the tags through `TagSeeder`, which is idempotent.
-
-**Scripts and environment.**
-
-1. In [composer.json](../../../backend/composer.json), add a `test:postgres` script that clears the config and runs `php artisan test --group=postgres`.
-2. Add these placeholders to `backend/.env.example`, with an empty database name so the group is skipped until a developer sets it.
-
-```dotenv
-TEST_POSTGRES_HOST=127.0.0.1
-TEST_POSTGRES_PORT=5432
-TEST_POSTGRES_DATABASE=
-TEST_POSTGRES_USERNAME=your-test-database-username
-TEST_POSTGRES_PASSWORD=your-test-database-password
-TEST_POSTGRES_SSLMODE=require
-```
-
-3. In the local `.env`, point these at a new, empty database such as `service_request_tracker_test`, created once with `createdb`. A local server without SSL may set `TEST_POSTGRES_SSLMODE=prefer` for this test database only. The main connection keeps requiring SSL, as section 5.11 of the main plan requires.
-
-`composer test` runs every test, including the `postgres` group when it is configured. `composer test:postgres` runs only that group.
+No test configuration changes. [tests/TestCase.php](../../../backend/tests/TestCase.php) keeps the in memory SQLite connection as the default for every test, `composer test` stays the only test command, and `backend/.env.example` gains no test database settings. The concurrency and constraint guarantees that SQLite cannot show are covered by `WorkflowConsistencyTest` in Step B18 and by items 8, 9 and 12 of section 7.
 
 ### Step B17. Update the Phase 5 test helper and the affected tests
 
@@ -473,7 +444,7 @@ TEST_POSTGRES_SSLMODE=require
 
 ### Step B18. Write the Phase 6 tests
 
-All feature tests use `RefreshDatabase`, `InteractsWithFrontendSession`, `InteractsWithServiceRequests` and `SeedsServiceRequestTags`, following the Phase 5 tests, unless they belong to the `postgres` group.
+All feature tests use `RefreshDatabase`, `InteractsWithFrontendSession`, `InteractsWithServiceRequests` and `SeedsServiceRequestTags`, following the Phase 5 tests.
 
 **`tests/Unit/Enums/ServiceRequestStatusTest.php`**
 
@@ -545,22 +516,6 @@ All feature tests use `RefreshDatabase`, `InteractsWithFrontendSession`, `Intera
 - A status change and a reassignment with a stale instance, after the actor reassigned the request away in another call, each throw `ConcurrentUpdateException` and write nothing.
 - When a `creating` listener on `ServiceRequestStatusHistory` throws during a self assignment, the assignee history record written before it is rolled back and the status stays `OPEN`. The listener is registered only inside that test.
 
-**`tests/Feature/Postgres/RowLockingTest.php`** extends `PostgresTestCase` and belongs to the `postgres` group.
-
-- The competitor connection begins a transaction and performs a self assignment for technician A through the workflow service, with the default connection switched to the competitor for that call and switched back afterwards. Its transaction stays open, so it holds the row lock.
-- On the main connection, with `SET lock_timeout` set to a short value held in a constant, a self assignment for technician B fails with a `QueryException` whose SQLSTATE is `55P03`, which shows that it waited for the lock. Nothing is written for technician B.
-- After the competitor commits and `lock_timeout` is reset, the same self assignment for technician B returns `ConcurrentUpdateException`.
-- The database holds exactly one assignee history record, naming technician A, one status record from `OPEN` to `ASSIGNED`, and the status `ASSIGNED`.
-- A second test repeats the pattern for a status change against a reassignment and shows that the status change waits and then fails with `ConcurrentUpdateException`.
-
-**`tests/Feature/Postgres/CheckConstraintsTest.php`** extends `PostgresTestCase` and belongs to the `postgres` group. Each case inserts a row through the query builder and expects a `QueryException` whose SQLSTATE is `23514`.
-
-- A service request with a status outside the enum.
-- A status history record with an empty from status and an actor, and one with a from status and no actor.
-- A user with an uppercase email and a user with an unknown role.
-- A tag with an unknown name and an audit log row with an unknown event.
-- A full workflow run of self assignment, status changes, reassignment and reopening succeeds, which proves that every record the workflow writes satisfies the constraints.
-
 **`tests/Feature/Auth/ProtectedRoutesTest.php`**
 
 - Add `test_every_staff_service_request_route_requires_its_gate`. A constant maps `service-requests.index` to the `view-all-service-requests` Gate and the four other new route names to the `handle-service-requests` Gate, and the test asserts that each route's gathered middleware contains the matching `Authorize::using(...)` string.
@@ -578,10 +533,9 @@ All feature tests use `RefreshDatabase`, `InteractsWithFrontendSession`, `Intera
 ### Step B19. Format and verify
 
 1. Run `vendor/bin/pint`, then `composer lint`.
-2. Run `composer test` and confirm every test passes. Without the PostgreSQL test settings, the `postgres` group is reported as skipped.
-3. Create the local test database, set the `TEST_POSTGRES_*` values in `.env`, run `composer test:postgres` and confirm every test in the group passes.
-4. Run `php artisan migrate:fresh --seed`, then `php artisan db:seed --class=DevelopmentSeeder`, and confirm in `psql` that the requests are spread across all four statuses with matching history.
-5. With `php artisan serve` running, confirm that `curl -i http://localhost:8000/api/service-requests` returns `401` with the error shape.
+2. Run `composer test` and confirm every test passes with none skipped.
+3. Run `php artisan migrate:fresh --seed`, then `php artisan db:seed --class=DevelopmentSeeder`, and confirm in `psql` that the requests are spread across all four statuses with matching history.
+4. With `php artisan serve` running, confirm that `curl -i http://localhost:8000/api/service-requests` returns `401` with the error shape.
 
 ## 6. Frontend Steps
 
@@ -738,13 +692,13 @@ Phase 6 is complete when every item below is true.
 | Criterion from the main plan | How it is verified |
 | --- | --- |
 | The dashboard lists all requests for technicians and admins, newest first and paginated | `ListServiceRequestsTest` passes and item 2 of section 7 succeeds. |
-| Self assignment, reassignment and status change lock the row, re-validate the state and write their history in one transaction | `AssignServiceRequestTest`, `ReassignServiceRequestTest`, `ChangeServiceRequestStatusTest`, `WorkflowConsistencyTest` and `RowLockingTest` pass. |
+| Self assignment, reassignment and status change lock the row, re-validate the state and write their history in one transaction | `AssignServiceRequestTest`, `ReassignServiceRequestTest`, `ChangeServiceRequestStatusTest`, and `WorkflowConsistencyTest` pass. |
 | Transition rules are centralized in the status enum and the workflow service | `ServiceRequestStatusTest` passes and no other class lists allowed statuses. |
-| Tests cover valid transitions, no op and prohibited transitions, conflicting concurrent changes, reassignment by a non assignee and concurrent self assignment | The cases listed in Step B18 pass, including the `postgres` group. |
+| Tests cover valid transitions, no op and prohibited transitions, conflicting concurrent changes, reassignment by a non assignee and concurrent self assignment | The cases listed in Step B18 pass. |
 | Requests move through the workflow correctly and every change is recorded | Items 3 to 7 of section 7 succeed and the history assertions in the workflow tests pass. |
-| Conflicting changes are rejected without corrupting data | Items 8, 9 and 12 of section 7 succeed and `RowLockingTest` proves exactly one winner. |
+| Conflicting changes are rejected without corrupting data | Items 8, 9 and 12 of section 7 succeed and `WorkflowConsistencyTest` proves that a stale change is rejected and leaves exactly one assignment. |
 | The dashboard, the assign to me action, the reassign dialog and the status change controls exist, and a conflict shows a clear message and reloads the request | Steps F8 to F11 are complete and items 3 to 9 of section 7 succeed. |
-| The PostgreSQL check constraints hold for every record the workflow writes | `CheckConstraintsTest` passes. |
+| The PostgreSQL check constraints hold for every record the workflow writes | Step B19.3 seeds the workflow into the development database without a constraint error, and item 12 of section 7 succeeds. |
 | The main plan reflects the confirmed workflow rules | Step B1 is complete. |
 | Coding standards | Pint, ESLint and the TypeScript check pass, every new file has only its header comment, and no strings are hardcoded outside enums and constants. |
 
@@ -753,7 +707,7 @@ Phase 6 is complete when every item below is true.
 - **Overview figures.** Phase 7 reads the seeded workflow history. Every request has its initial status record and every later record has an actor, so the last status change, the monthly resolved counts, the average resolution time and the current workload can all be computed from the history tables and the current assignee relation. The `assigned_to_user_id` index serves the workload graph.
 - **Repeated resolution.** A request can be resolved, reopened and resolved again. Phase 7 must decide whether resolution time counts to the first or the latest move to `RESOLVED`.
 - **Lock waits.** No `lock_timeout` is configured for the application. Workflow transactions are short, so a waiting request is delayed by milliseconds. If production ever shows long waits, Phase 8 can set a lock timeout and map the error to `409 CONCURRENT_UPDATE`.
-- **PostgreSQL test group.** The locking and constraint tests run only where a PostgreSQL test database is configured. Phase 8 should run `composer test:postgres` as part of release readiness.
+- **SQLite only tests.** The test suite runs on SQLite, which ignores `lockForUpdate` and skips the check constraints. The row locking and the constraints are therefore verified manually through section 7, not by an automated test.
 - **Dashboard page in the URL.** The current page is kept in component state, as on the other lists, so a browser reload returns to page 1.
 - **No filters.** The dashboard has no search or filter, because the main plan describes none.
 - **Frontend tests.** The frontend still has no test runner, so the workflow screens are verified manually through section 7.
@@ -765,6 +719,6 @@ Each commit leaves both applications working.
 1. `docs: confirm the reassignment and reopening rules in the main plan` covers Step B1.
 2. `feat(backend): add transition rules, workflow service and dashboard, assignment, reassignment and status endpoints` covers Steps B2 to B14.
 3. `feat(backend): move development seed requests through the workflow` covers Step B15.
-4. `test(backend): add workflow tests and the opt in PostgreSQL locking and constraint group` covers Steps B16 to B19.
+4. `test(backend): add the workflow, dashboard, assignment and status tests` covers Steps B16 to B19.
 5. `feat(frontend): add workflow types, constants, helpers and service methods` covers Steps F1 to F7.
 6. `feat(frontend): add request dashboard, assign to me, reassign and status change controls` covers Steps F8 to F13.
