@@ -1,7 +1,7 @@
 <?php
 
 // Deletes stored sessions of a user from the sessions table.
-// Used when a password changes, and later by session management and admin password resets.
+// Used by password changes, self service session management and admin password resets.
 
 namespace App\Services\Sessions;
 
@@ -10,6 +10,14 @@ use Illuminate\Support\Facades\DB;
 
 final class SessionTerminator
 {
+    public function terminateSession(User $user, string $sessionId): int
+    {
+        return DB::table($this->table())
+            ->where('user_id', $user->getKey())
+            ->where('id', $sessionId)
+            ->delete();
+    }
+
     public function terminateOtherSessions(User $user, string $currentSessionId): int
     {
         return DB::table($this->table())

@@ -1,15 +1,18 @@
 <?php
 
 // Registers application wide services and boot time configuration.
-// Defines the central password policy, the rate limiters and the strict model and database safeguards.
+// Defines the central password policy, the rate limiters, the authorization policies and the strict model and database safeguards.
 
 namespace App\Providers;
 
+use App\Data\Sessions\ActiveSession;
 use App\Enums\RateLimiterName;
+use App\Policies\SessionPolicy;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
@@ -32,6 +35,8 @@ class AppServiceProvider extends ServiceProvider
         Sanctum::getAccessTokenFromRequestUsing(fn (): ?string => null);
 
         $this->configureRateLimiting();
+
+        $this->configureAuthorization();
     }
 
     private function passwordPolicy(): Password
@@ -57,5 +62,10 @@ class AppServiceProvider extends ServiceProvider
             fn (Request $request): Limit => Limit::perMinute((int) config('rate_limits.password_change.max_attempts_per_minute'))
                 ->by((string) ($request->user()?->getAuthIdentifier() ?? $request->ip())),
         );
+    }
+
+    private function configureAuthorization(): void
+    {
+        Gate::policy(ActiveSession::class, SessionPolicy::class);
     }
 }
