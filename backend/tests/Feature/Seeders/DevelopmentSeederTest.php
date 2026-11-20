@@ -1,6 +1,6 @@
 <?php
 
-// Verifies the development seeder that creates demo users and open requests.
+// Verifies the development seeder that creates demo users and requests spread across the workflow statuses.
 // It runs only in the local environment, needs a valid password, never reveals it and can run twice.
 
 namespace Tests\Feature\Seeders;
@@ -8,11 +8,11 @@ namespace Tests\Feature\Seeders;
 use App\Enums\ServiceRequestStatus;
 use App\Enums\UserRole;
 use App\Models\ServiceRequest;
-use App\Models\ServiceRequestStatusHistory;
 use App\Models\Tag;
 use App\Models\User;
 use Database\Seeders\DevelopmentSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Hash;
 use PHPUnit\Framework\Attributes\DataProvider;
 use RuntimeException;
@@ -69,8 +69,22 @@ class DevelopmentSeederTest extends TestCase
         $this->runSeeder();
 
         $this->assertDemoUsersExist();
-        $this->assertSame(DevelopmentSeeder::OPEN_REQUEST_COUNT, ServiceRequest::query()->count());
-        $this->assertSame(0, ServiceRequest::query()->where('status', '!=', ServiceRequestStatus::Open)->count());
+        $this->assertSame(DevelopmentSeeder::REQUEST_COUNT, ServiceRequest::query()->count());
+
+        $openCount = DevelopmentSeeder::REQUEST_COUNT
+            - DevelopmentSeeder::RESOLVED_REQUEST_COUNT
+            - DevelopmentSeeder::IN_PROGRESS_REQUEST_COUNT
+            - DevelopmentSeeder::ASSIGNED_REQUEST_COUNT;
+        $expectedCounts = [
+            ServiceRequestStatus::Open->value => $openCount,
+            ServiceRequestStatus::Assigned->value => DevelopmentSeeder::ASSIGNED_REQUEST_COUNT,
+            ServiceRequestStatus::InProgress->value => DevelopmentSeeder::IN_PROGRESS_REQUEST_COUNT,
+            ServiceRequestStatus::Resolved->value => DevelopmentSeeder::RESOLVED_REQUEST_COUNT,
+        ];
+
+        foreach ($expectedCounts as $status => $expectedCount) {
+            $this->assertSame($expectedCount, ServiceRequest::query()->where('status', $status)->count());
+        }
 
         $demoRequesterIds = User::query()
             ->whereIn('email', array_column(DevelopmentSeeder::REQUESTERS, 'email'))
@@ -78,20 +92,48 @@ class DevelopmentSeederTest extends TestCase
             ->all();
         $this->assertSame(0, ServiceRequest::query()->whereNotIn('requested_by_user_id', $demoRequesterIds)->count());
 
-        $histories = ServiceRequestStatusHistory::query()->get();
-        $this->assertCount(DevelopmentSeeder::OPEN_REQUEST_COUNT, $histories);
-        $this->assertCount(DevelopmentSeeder::OPEN_REQUEST_COUNT, $histories->unique('service_request_id'));
-        $this->assertTrue($histories->every(fn (ServiceRequestStatusHistory $history): bool => $history->isInitialRecord()));
-
-        $requests = ServiceRequest::query()->with(['tags', 'statusHistories'])->get();
+        $requests = ServiceRequest::query()
+            ->with(['tags', 'statusHistories', 'assigneeHistories'])
+            ->get();
         $earliestAllowed = now()->subMonths(DevelopmentSeeder::HISTORY_MONTHS)->subMinute();
+        $reassignedCount = 0;
 
         foreach ($requests as $serviceRequest) {
             $this->assertNotEmpty($serviceRequest->tags);
             $this->assertLessThanOrEqual(DevelopmentSeeder::MAXIMUM_TAGS_PER_REQUEST, $serviceRequest->tags->count());
             $this->assertTrue($serviceRequest->created_at->greaterThanOrEqualTo($earliestAllowed));
-            $this->assertTrue($serviceRequest->created_at->equalTo($serviceRequest->statusHistories->sole()->created_at));
+
+            $statusHistories = $serviceRequest->statusHistories->sortBy('id')->values();
+            $this->assertTrue($statusHistories->first()->isInitialRecord());
+            $this->assertTrue($serviceRequest->created_at->equalTo($statusHistories->first()->created_at));
+
+            foreach ($statusHistories->slice(1) as $history) {
+                $this->assertNotNull($history->from_status);
+                $this->assertNotNull($history->changed_by_user_id);
+            }
+
+            $assigneeHistories = $serviceRequest->assigneeHistories->sortBy('id')->values();
+
+            if ($serviceRequest->status === ServiceRequestStatus::Open) {
+                $this->assertCount(0, $assigneeHistories);
+            } else {
+                $this->assertGreaterThanOrEqual(1, $assigneeHistories->count());
+            }
+
+            if ($assigneeHistories->count() === 2) {
+                $reassignedCount++;
+            }
+
+            $previousTime = $serviceRequest->created_at;
+
+            foreach ($statusHistories->slice(1)->concat($assigneeHistories)->sortBy('created_at') as $record) {
+                $this->assertTrue($record->created_at->greaterThanOrEqualTo($previousTime));
+                $previousTime = $record->created_at;
+            }
         }
+
+        $this->assertSame(DevelopmentSeeder::REASSIGNED_REQUEST_COUNT, $reassignedCount);
+        $this->assertFalse(Date::hasTestNow());
     }
 
     public function test_requests_are_spread_to_the_initial_admin_when_configured(): void
