@@ -1,5 +1,5 @@
 // Shared button with visual variants, sizes and a loading state.
-// The type defaults to button so it never submits a form by accident.
+// The type defaults to button, and the class builder lets links look like buttons.
 
 import type { ComponentProps } from "react";
 import { Spinner } from "@/components/shared/spinner";
@@ -24,6 +24,21 @@ const sizeClassNames: Record<ComponentSize, string> = {
   [ComponentSize.Large]: "h-11 gap-2 rounded-lg px-5 text-base",
 };
 
+export function getButtonClassNames(
+  variant: ButtonVariant = ButtonVariant.Primary,
+  size: ComponentSize = ComponentSize.Medium,
+  className?: string,
+): string {
+  return mergeClassNames(
+    "inline-flex shrink-0 cursor-pointer items-center justify-center border font-medium whitespace-nowrap transition-colors",
+    "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
+    "disabled:cursor-not-allowed disabled:opacity-60",
+    variantClassNames[variant],
+    sizeClassNames[size],
+    className,
+  );
+}
+
 interface ButtonProps extends ComponentProps<"button"> {
   variant?: ButtonVariant;
   size?: ComponentSize;
@@ -45,14 +60,7 @@ export function Button({
       type={type}
       disabled={disabled || isLoading}
       aria-busy={isLoading || undefined}
-      className={mergeClassNames(
-        "inline-flex shrink-0 cursor-pointer items-center justify-center border font-medium whitespace-nowrap transition-colors",
-        "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
-        "disabled:cursor-not-allowed disabled:opacity-60",
-        variantClassNames[variant],
-        sizeClassNames[size],
-        className,
-      )}
+      className={getButtonClassNames(variant, size, className)}
       {...props}
     >
       {isLoading && <Spinner size={ComponentSize.Small} />}

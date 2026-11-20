@@ -1,8 +1,9 @@
 // Root layout shared by every page, holding the fonts, metadata and app providers.
-// Step F13 adds per request dynamic rendering for the CSP nonce.
+// Renders every page dynamically so each response receives its own CSP nonce.
 
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { connection } from "next/server";
 import { AppProviders } from "@/components/shared/app-providers";
 import { APPLICATION_DESCRIPTION, APPLICATION_NAME } from "@/constants/application";
 import "./globals.css";
@@ -22,7 +23,9 @@ export const metadata: Metadata = {
   description: APPLICATION_DESCRIPTION,
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  await connection();
+
   return (
     <html
       lang="en"
