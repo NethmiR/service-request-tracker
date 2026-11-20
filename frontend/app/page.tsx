@@ -1,68 +1,118 @@
-import Image from "next/image";
+// Temporary preview of every base component in its main states.
+// Phase 2 replaces it with the root redirect and deletes the preview component.
+
+import { Alert } from "@/components/shared/alert";
+import { Badge } from "@/components/shared/badge";
+import { Button } from "@/components/shared/button";
+import { ComponentPreview, PreviewSection } from "@/components/shared/component-preview";
+import { EmptyState } from "@/components/shared/empty-state";
+import { PageHeader } from "@/components/shared/page-header";
+import { Spinner } from "@/components/shared/spinner";
+import { StatCard } from "@/components/shared/stat-card";
+import { ComponentPreviewText, PREVIEW_STAT_COUNTS, PREVIEW_STATUS_TONES } from "@/constants/component-preview";
+import { SERVICE_REQUEST_STATUS_LABELS, USER_ROLE_LABELS } from "@/constants/enum-labels";
+import { ServiceRequestStatus } from "@/enums/service-request-status";
+import { UserRole } from "@/enums/user-role";
+import { AlertTone } from "@/enums/ui/alert-tone";
+import { ButtonVariant } from "@/enums/ui/button-variant";
+import { ComponentSize } from "@/enums/ui/component-size";
+
+const alertSamples: { tone: AlertTone; title: string; body: string }[] = [
+  { tone: AlertTone.Info, title: ComponentPreviewText.InfoAlertTitle, body: ComponentPreviewText.InfoAlertBody },
+  { tone: AlertTone.Success, title: ComponentPreviewText.SuccessAlertTitle, body: ComponentPreviewText.SuccessAlertBody },
+  { tone: AlertTone.Warning, title: ComponentPreviewText.WarningAlertTitle, body: ComponentPreviewText.WarningAlertBody },
+  { tone: AlertTone.Danger, title: ComponentPreviewText.DangerAlertTitle, body: ComponentPreviewText.DangerAlertBody },
+];
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+    <div className="flex flex-1 flex-col gap-4 p-4 sm:p-6">
+      <PageHeader
+        title={ComponentPreviewText.PageTitle}
+        description={ComponentPreviewText.PageDescription}
+        actions={<Badge>{ComponentPreviewText.PhaseLabel}</Badge>}
+        className="rounded-lg bg-surface px-6 py-4"
+      />
+      <main className="flex flex-col gap-8 rounded-lg bg-surface p-6 sm:p-8">
+        <PreviewSection
+          title={ComponentPreviewText.ButtonsSection}
+          description={ComponentPreviewText.ButtonsDescription}
+        >
+          <div className="flex flex-wrap items-center gap-3">
+            <Button>{ComponentPreviewText.PrimaryButton}</Button>
+            <Button variant={ButtonVariant.Secondary}>{ComponentPreviewText.SecondaryButton}</Button>
+            <Button variant={ButtonVariant.Danger}>{ComponentPreviewText.DangerButton}</Button>
+            <Button variant={ButtonVariant.Ghost}>{ComponentPreviewText.GhostButton}</Button>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <Button size={ComponentSize.Small}>{ComponentPreviewText.SmallButton}</Button>
+            <Button size={ComponentSize.Medium}>{ComponentPreviewText.MediumButton}</Button>
+            <Button size={ComponentSize.Large}>{ComponentPreviewText.LargeButton}</Button>
+            <Button isLoading>{ComponentPreviewText.LoadingButton}</Button>
+            <Button disabled>{ComponentPreviewText.DisabledButton}</Button>
+          </div>
+        </PreviewSection>
+
+        <ComponentPreview />
+
+        <PreviewSection
+          title={ComponentPreviewText.BadgesSection}
+          description={ComponentPreviewText.BadgesDescription}
+        >
+          <div className="flex flex-wrap gap-2">
+            {Object.values(ServiceRequestStatus).map((status) => (
+              <Badge key={status} tone={PREVIEW_STATUS_TONES[status]}>
+                {SERVICE_REQUEST_STATUS_LABELS[status]}
+              </Badge>
+            ))}
+            {Object.values(UserRole).map((role) => (
+              <Badge key={role}>{USER_ROLE_LABELS[role]}</Badge>
+            ))}
+          </div>
+        </PreviewSection>
+
+        <PreviewSection
+          title={ComponentPreviewText.StatCardsSection}
+          description={ComponentPreviewText.StatCardsDescription}
+        >
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {Object.values(ServiceRequestStatus).map((status) => (
+              <StatCard
+                key={status}
+                label={SERVICE_REQUEST_STATUS_LABELS[status]}
+                value={PREVIEW_STAT_COUNTS[status]}
+              />
+            ))}
+          </div>
+        </PreviewSection>
+
+        <PreviewSection
+          title={ComponentPreviewText.AlertsSection}
+          description={ComponentPreviewText.AlertsDescription}
+        >
+          <div className="flex flex-col gap-3">
+            {alertSamples.map((sample) => (
+              <Alert key={sample.tone} tone={sample.tone} title={sample.title}>
+                {sample.body}
+              </Alert>
+            ))}
+          </div>
+        </PreviewSection>
+
+        <PreviewSection
+          title={ComponentPreviewText.FeedbackSection}
+          description={ComponentPreviewText.FeedbackDescription}
+        >
+          <div className="flex items-center gap-6 text-primary">
+            <Spinner size={ComponentSize.Small} />
+            <Spinner size={ComponentSize.Medium} />
+            <Spinner size={ComponentSize.Large} />
+          </div>
+          <EmptyState
+            action={<Button>{ComponentPreviewText.EmptyStateAction}</Button>}
+            className="rounded-lg border border-dashed border-border"
+          />
+        </PreviewSection>
       </main>
     </div>
   );
