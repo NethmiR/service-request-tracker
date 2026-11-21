@@ -1,7 +1,7 @@
 <?php
 
 // Registers application wide services, container bindings and boot time configuration.
-// Defines the central password policy, the rate limiters, the Gates, the authorization policies and the strict model and database safeguards.
+// Defines the central password policy, the rate limiters, the Gates, the authorization policies, the trusted proxies and the strict model and database safeguards.
 
 namespace App\Providers;
 
@@ -15,6 +15,7 @@ use App\Models\User;
 use App\Policies\ServiceRequestPolicy;
 use App\Policies\SessionPolicy;
 use App\Services\Users\DisplayOnceTemporaryPasswordDelivery;
+use App\Support\Http\TrustedProxyConfigurator;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
@@ -45,6 +46,8 @@ class AppServiceProvider extends ServiceProvider
 
         Sanctum::getAccessTokenFromRequestUsing(fn (): ?string => null);
 
+        $this->configureTrustedProxies();
+
         $this->configureRateLimiting();
 
         $this->configureAuthorization();
@@ -58,6 +61,11 @@ class AppServiceProvider extends ServiceProvider
             ->symbols();
 
         return $this->app->isProduction() ? $policy->uncompromised() : $policy;
+    }
+
+    private function configureTrustedProxies(): void
+    {
+        TrustedProxyConfigurator::configure((array) config('trusted_proxies.addresses'));
     }
 
     private function configureRateLimiting(): void

@@ -1,7 +1,7 @@
 <?php
 
 // Cache stores used by the application and by rate limiting.
-// The default store is selected through the environment.
+// The database store is the production store, so rate limit counters are shared across several application servers.
 
 use Illuminate\Support\Str;
 

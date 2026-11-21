@@ -2,6 +2,7 @@
 
 // Holds every workflow rule that depends on stored state, namely self assignment, reassignment and status changes.
 // Each change locks the request row, re-validates its latest status and assignee and writes its history in one transaction.
+// A change that waits longer than the configured lock timeout for the row lock is rejected as a concurrent update.
 
 namespace App\Services\ServiceRequests;
 
@@ -15,6 +16,10 @@ use App\Exceptions\InvalidStatusTransitionException;
 use App\Exceptions\StatusUnchangedException;
 use App\Models\ServiceRequest;
 use App\Models\User;
+use App\Support\Database\LockTimeout;
+use Closure;
+use Illuminate\Container\Attributes\Config;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 
 final class ServiceRequestWorkflowService
@@ -22,11 +27,13 @@ final class ServiceRequestWorkflowService
     public function __construct(
         private readonly ServiceRequestHistoryRecorder $historyRecorder,
         private readonly ServiceRequestService $serviceRequestService,
+        #[Config('workflow.lock_timeout_milliseconds')]
+        private readonly int $lockTimeoutMilliseconds,
     ) {}
 
     public function assignToSelf(User $actor, ServiceRequest $serviceRequest, SelfAssignment $assignment): ServiceRequest
     {
-        DB::transaction(function () use ($actor, $serviceRequest, $assignment): void {
+        $this->runLocked(function () use ($actor, $serviceRequest, $assignment): void {
             $locked = $this->lockForChange($serviceRequest);
 
             if (! $locked->status->isAssignable()) {
@@ -51,7 +58,7 @@ final class ServiceRequestWorkflowService
 
     public function reassign(User $actor, ServiceRequest $serviceRequest, Reassignment $reassignment): ServiceRequest
     {
-        DB::transaction(function () use ($actor, $serviceRequest, $reassignment): void {
+        $this->runLocked(function () use ($actor, $serviceRequest, $reassignment): void {
             $locked = $this->lockForChange($serviceRequest);
 
             if (! $locked->isAssignedTo($actor)) {
@@ -74,7 +81,7 @@ final class ServiceRequestWorkflowService
 
     public function changeStatus(User $actor, ServiceRequest $serviceRequest, StatusChange $change): ServiceRequest
     {
-        DB::transaction(function () use ($actor, $serviceRequest, $change): void {
+        $this->runLocked(function () use ($actor, $serviceRequest, $change): void {
             $locked = $this->lockForChange($serviceRequest);
 
             if (! $locked->isAssignedTo($actor)) {
@@ -102,6 +109,23 @@ final class ServiceRequestWorkflowService
         });
 
         return $this->freshDetail($serviceRequest);
+    }
+
+    private function runLocked(Closure $change): void
+    {
+        try {
+            DB::transaction(function () use ($change): void {
+                LockTimeout::applyToCurrentTransaction($this->lockTimeoutMilliseconds);
+
+                $change();
+            });
+        } catch (QueryException $exception) {
+            if (LockTimeout::isLockTimeout($exception)) {
+                throw new ConcurrentUpdateException($exception);
+            }
+
+            throw $exception;
+        }
     }
 
     private function lockForChange(ServiceRequest $serviceRequest): ServiceRequest
