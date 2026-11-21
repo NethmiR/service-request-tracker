@@ -437,7 +437,8 @@ Create these in `types/overview/`. Each file mirrors the wire format in snake_ca
    | `formatAverageResolution(hours)` | `{hours} hours`, or the "no data" text for `null` |
 
 2. Create **`constants/charts.ts`**. It holds the SVG view box width and height for each chart type, the plot padding, the number of axis ticks, the bar gap ratio and the point radius, as named constants. Charts never use raw numbers inline.
-3. In [constants/auth-messages.ts](../../../frontend/constants/auth-messages.ts), remove `OverviewTitle` and `OverviewPlaceholder`, and update the header comment so it covers only sign in, change password and sign out. Search for both names to confirm nothing else references them.
+
+The placeholder overview page still uses `AuthMessage.OverviewTitle` and `AuthMessage.OverviewPlaceholder` until Step F9 replaces it, so removing them is part of Step F9.
 
 ### Step F4. Add the chart and month helpers
 
@@ -491,6 +492,8 @@ Create these in `components/overview/`. All visible text comes from `OverviewMes
 ### Step F9. Replace the overview page
 
 Replace the contents of [(staff)/overview/page.tsx](../../../frontend/app/(authenticated)/(workspace)/(staff)/overview/page.tsx) with a server component that exports metadata with `OverviewMessage.PageTitle` and renders `PageHeader` with the title and description, followed by `OverviewPanel`. Update its header comment so it describes the overview and no longer mentions Phase 7. The `(staff)` layout and its header comment do not change.
+
+Then, in [constants/auth-messages.ts](../../../frontend/constants/auth-messages.ts), remove `OverviewTitle` and `OverviewPlaceholder`, and update the header comment so it covers only sign in, change password and sign out. Search for both names to confirm nothing else references them.
 
 ### Step F10. Remove placeholder files
 

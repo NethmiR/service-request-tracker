@@ -14,6 +14,7 @@ export enum ApiEndpoint {
   ServiceRequests = "/api/service-requests",
   MyServiceRequests = "/api/service-requests/mine",
   ServiceRequestAssignees = "/api/service-requests/assignees",
+  Overview = "/api/overview",
 }
 
 export function sessionEndpoint(sessionIdentifier: string): string {
