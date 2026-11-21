@@ -1,7 +1,7 @@
 <?php
 
-// Creates demo technicians, requesters and service requests for local development only, and moves many of them through the workflow.
-// It is run by hand, refuses to run outside the local environment and is never called from the database seeder.
+// Creates demo service requests raised and handled by the test users, and moves many of them through the workflow.
+// It is run by hand and is never called from the database seeder. It seeds the tags and the test users first.
 
 namespace Database\Seeders;
 
@@ -17,17 +17,9 @@ use App\Services\ServiceRequests\ServiceRequestWorkflowService;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Date;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Str;
-use Illuminate\Validation\Rules\Password;
-use RuntimeException;
 
 class DevelopmentSeeder extends Seeder
 {
-    public const string LOCAL_ENVIRONMENT_REQUIRED_MESSAGE = 'The development seeder runs only in the local environment.';
-
-    public const string INVALID_PASSWORD_MESSAGE = 'The development seeder cannot run. Set DEVELOPMENT_USER_PASSWORD to a value that satisfies the password policy.';
-
     public const int REQUEST_COUNT = 40;
 
     public const int RESOLVED_REQUEST_COUNT = 16;
@@ -58,24 +50,7 @@ class DevelopmentSeeder extends Seeder
 
     public const int MAXIMUM_TAGS_PER_REQUEST = 2;
 
-    public const array TECHNICIANS = [
-        ['name' => 'Tharindu Perera', 'email' => 'tharindu.perera@example.test'],
-        ['name' => 'Ishara Fernando', 'email' => 'ishara.fernando@example.test'],
-    ];
-
-    public const array REQUESTERS = [
-        ['name' => 'Kasun Silva', 'email' => 'kasun.silva@example.test'],
-        ['name' => 'Dilani Jayasinghe', 'email' => 'dilani.jayasinghe@example.test'],
-        ['name' => 'Ruwan Bandara', 'email' => 'ruwan.bandara@example.test'],
-    ];
-
-    private const string PASSWORD_CONFIG_KEY = 'development_seed.user_password';
-
-    private const string INITIAL_ADMIN_EMAIL_CONFIG_KEY = 'initial_admin.email';
-
-    private const string PASSWORD = 'password';
-
-    private const string NAME = 'name';
+    public const array REQUESTING_ROLES = [UserRole::Requester, UserRole::Admin];
 
     private const string EMAIL = 'email';
 
@@ -89,78 +64,21 @@ class DevelopmentSeeder extends Seeder
 
     public function run(): void
     {
-        if (! app()->isLocal()) {
-            throw new RuntimeException(self::LOCAL_ENVIRONMENT_REQUIRED_MESSAGE);
-        }
-
-        $password = config(self::PASSWORD_CONFIG_KEY);
-
-        $this->ensureValidPassword($password);
-
         $this->call(TagSeeder::class);
+        $this->call(TestUserSeeder::class);
 
-        foreach (self::TECHNICIANS as $technician) {
-            $this->createUserUnlessExists($technician, UserRole::Technician, $password);
-        }
+        $requests = $this->createRequests($this->testUsersWithRoles(...self::REQUESTING_ROLES));
 
-        foreach (self::REQUESTERS as $requester) {
-            $this->createUserUnlessExists($requester, UserRole::Requester, $password);
-        }
-
-        $requests = $this->createRequests($this->requestingUsers());
-
-        $this->moveRequestsThroughWorkflow($requests, $this->staffUsers());
+        $this->moveRequestsThroughWorkflow($requests, $this->testUsersWithRoles(...UserRole::staff()));
     }
 
-    private function ensureValidPassword(mixed $password): void
+    private function testUsersWithRoles(UserRole ...$roles): array
     {
-        $validator = Validator::make(
-            [self::PASSWORD => $password],
-            [self::PASSWORD => ['required', 'string', Password::defaults()]],
-        );
-
-        if ($validator->fails()) {
-            throw new RuntimeException(self::INVALID_PASSWORD_MESSAGE);
-        }
-    }
-
-    private function createUserUnlessExists(array $details, UserRole $role, string $password): void
-    {
-        if (User::query()->where(self::EMAIL, $details[self::EMAIL])->exists()) {
-            return;
-        }
-
-        User::factory()->create([
-            self::NAME => $details[self::NAME],
-            self::EMAIL => $details[self::EMAIL],
-            self::PASSWORD => $password,
-            'role' => $role,
-            'password_changed_at' => now(),
-        ]);
-    }
-
-    private function requestingUsers(): array
-    {
-        $emails = array_column(self::REQUESTERS, self::EMAIL);
-        $initialAdminEmail = config(self::INITIAL_ADMIN_EMAIL_CONFIG_KEY);
-
-        if (is_string($initialAdminEmail) && trim($initialAdminEmail) !== '') {
-            $emails[] = Str::lower(trim($initialAdminEmail));
-        }
-
-        return User::query()->whereIn(self::EMAIL, $emails)->get()->all();
-    }
-
-    private function staffUsers(): array
-    {
-        $emails = array_column(self::TECHNICIANS, self::EMAIL);
-        $initialAdminEmail = config(self::INITIAL_ADMIN_EMAIL_CONFIG_KEY);
-
-        if (is_string($initialAdminEmail) && trim($initialAdminEmail) !== '') {
-            $emails[] = Str::lower(trim($initialAdminEmail));
-        }
-
-        return User::query()->whereIn(self::EMAIL, $emails)->orderBy('id')->get()->all();
+        return User::query()
+            ->whereIn(self::EMAIL, TestUserSeeder::emailsWithRoles(...$roles))
+            ->orderBy('id')
+            ->get()
+            ->all();
     }
 
     private function createRequests(array $requestingUsers): array

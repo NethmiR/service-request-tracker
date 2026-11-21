@@ -165,7 +165,7 @@ All tables are created through reversible Laravel migrations. Enum columns are b
 - **service_request_status_histories** holds the request, from status, to status, the user who made the change, the optional remark and the creation time. The from status and the user are empty only for the initial record written when the request is created, and a check constraint keeps them either both empty or both filled. It is indexed on request and creation time. It is also indexed on to status, request and creation time, which serves the resolution figures of the overview.
 - **service_request_assignee_histories** holds the request, the previous assignee, the new assignee, the mandatory remark and the creation time. It is indexed on request and creation time and on the new assignee. The latest record of each request identifies its current assignee.
 
-Seeders create the predefined tags and an initial admin whose credentials come from environment variables. Factories and a development seeder create demo users and requests for local use only.
+The database seeder creates the predefined tags and runs a test user seeder that creates fixed test users for each role. A development seeder, run separately, adds demo requests on top of them. Factories build users and requests for tests.
 
 ## 5. Security Requirements
 

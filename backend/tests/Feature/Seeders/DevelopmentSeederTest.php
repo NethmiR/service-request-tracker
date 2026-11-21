@@ -1,74 +1,28 @@
 <?php
 
-// Verifies the development seeder that creates demo users and requests spread across the workflow statuses.
-// It runs only in the local environment, needs a valid password, never reveals it and can run twice.
+// Verifies the development seeder that creates the test users and demo requests spread across the workflow statuses.
 
 namespace Tests\Feature\Seeders;
 
 use App\Enums\ServiceRequestStatus;
-use App\Enums\UserRole;
 use App\Models\ServiceRequest;
-use App\Models\Tag;
 use App\Models\User;
 use Database\Seeders\DevelopmentSeeder;
+use Database\Seeders\TestUserSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Hash;
-use PHPUnit\Framework\Attributes\DataProvider;
-use RuntimeException;
 use Tests\TestCase;
 
 class DevelopmentSeederTest extends TestCase
 {
     use RefreshDatabase;
 
-    private const string LOCAL_ENVIRONMENT = 'local';
-
-    private const string PRODUCTION_ENVIRONMENT = 'production';
-
-    private const string VALID_PASSWORD = 'Development-Password-2026!';
-
-    private int $tagCountBeforeSeeding = 0;
-
-    protected function setUp(): void
+    public function test_it_creates_the_demo_data(): void
     {
-        parent::setUp();
-
-        $this->tagCountBeforeSeeding = Tag::query()->count();
-    }
-
-    public static function invalidPasswords(): array
-    {
-        return [
-            'missing' => [null],
-            'empty' => [''],
-            'weak' => ['weak-password'],
-            'placeholder' => ['change-this-placeholder'],
-        ];
-    }
-
-    public function test_outside_the_local_environment_it_throws_and_writes_nothing(): void
-    {
-        $this->app['env'] = self::PRODUCTION_ENVIRONMENT;
-        $this->configureSeeder(self::VALID_PASSWORD);
-
-        try {
-            $this->runSeeder();
-            $this->fail('The seeder ran outside the local environment.');
-        } catch (RuntimeException $exception) {
-            $this->assertSame(DevelopmentSeeder::LOCAL_ENVIRONMENT_REQUIRED_MESSAGE, $exception->getMessage());
-        }
-
-        $this->assertNothingWasWritten();
-    }
-
-    public function test_in_the_local_environment_it_creates_the_demo_data(): void
-    {
-        $this->useLocalEnvironment(self::VALID_PASSWORD);
-
         $this->runSeeder();
 
-        $this->assertDemoUsersExist();
+        $this->assertTestUsersExist();
         $this->assertSame(DevelopmentSeeder::REQUEST_COUNT, ServiceRequest::query()->count());
 
         $openCount = DevelopmentSeeder::REQUEST_COUNT
@@ -86,11 +40,15 @@ class DevelopmentSeederTest extends TestCase
             $this->assertSame($expectedCount, ServiceRequest::query()->where('status', $status)->count());
         }
 
-        $demoRequesterIds = User::query()
-            ->whereIn('email', array_column(DevelopmentSeeder::REQUESTERS, 'email'))
+        $requestingUserIds = User::query()
+            ->whereIn('email', TestUserSeeder::emailsWithRoles(...DevelopmentSeeder::REQUESTING_ROLES))
             ->pluck('id')
             ->all();
-        $this->assertSame(0, ServiceRequest::query()->whereNotIn('requested_by_user_id', $demoRequesterIds)->count());
+        $this->assertSame(0, ServiceRequest::query()->whereNotIn('requested_by_user_id', $requestingUserIds)->count());
+
+        foreach ($requestingUserIds as $requestingUserId) {
+            $this->assertGreaterThan(0, ServiceRequest::query()->where('requested_by_user_id', $requestingUserId)->count());
+        }
 
         $requests = ServiceRequest::query()
             ->with(['tags', 'statusHistories', 'assigneeHistories'])
@@ -136,88 +94,29 @@ class DevelopmentSeederTest extends TestCase
         $this->assertFalse(Date::hasTestNow());
     }
 
-    public function test_requests_are_spread_to_the_initial_admin_when_configured(): void
-    {
-        $admin = User::factory()->admin()->create();
-        $this->useLocalEnvironment(self::VALID_PASSWORD, strtoupper($admin->email));
-
-        $this->runSeeder();
-
-        $this->assertGreaterThan(0, ServiceRequest::query()->where('requested_by_user_id', $admin->id)->count());
-    }
-
-    #[DataProvider('invalidPasswords')]
-    public function test_invalid_password_makes_it_throw_without_revealing_it(?string $password): void
-    {
-        $this->useLocalEnvironment($password);
-
-        try {
-            $this->runSeeder();
-            $this->fail('The seeder accepted an invalid password.');
-        } catch (RuntimeException $exception) {
-            $this->assertSame(DevelopmentSeeder::INVALID_PASSWORD_MESSAGE, $exception->getMessage());
-
-            if ($password !== null && $password !== '') {
-                $this->assertStringNotContainsString($password, $exception->getMessage());
-            }
-        }
-
-        $this->assertNothingWasWritten();
-    }
-
     public function test_running_it_twice_creates_no_duplicate_users(): void
     {
-        $this->useLocalEnvironment(self::VALID_PASSWORD);
-
         $this->runSeeder();
         $this->runSeeder();
 
-        $demoUserCount = count(DevelopmentSeeder::TECHNICIANS) + count(DevelopmentSeeder::REQUESTERS);
-
-        $this->assertSame($demoUserCount, User::query()->count());
-        $this->assertDemoUsersExist();
+        $this->assertSame(count(TestUserSeeder::USERS), User::query()->count());
+        $this->assertTestUsersExist();
     }
 
-    private function assertDemoUsersExist(): void
+    private function assertTestUsersExist(): void
     {
-        $expectedUsers = [
-            ...array_map(fn (array $user): array => [...$user, 'role' => UserRole::Technician], DevelopmentSeeder::TECHNICIANS),
-            ...array_map(fn (array $user): array => [...$user, 'role' => UserRole::Requester], DevelopmentSeeder::REQUESTERS),
-        ];
-
-        foreach ($expectedUsers as $expectedUser) {
+        foreach (TestUserSeeder::USERS as $expectedUser) {
             $user = User::query()->where('email', $expectedUser['email'])->sole();
 
             $this->assertSame($expectedUser['name'], $user->name);
             $this->assertSame($expectedUser['role'], $user->role);
             $this->assertFalse($user->requiresPasswordChange());
-            $this->assertTrue(Hash::check(self::VALID_PASSWORD, $user->password));
+            $this->assertTrue(Hash::check($expectedUser['password'], $user->password));
         }
-    }
-
-    private function assertNothingWasWritten(): void
-    {
-        $this->assertSame(0, User::query()->count());
-        $this->assertSame($this->tagCountBeforeSeeding, Tag::query()->count());
-        $this->assertSame(0, ServiceRequest::query()->count());
-    }
-
-    private function useLocalEnvironment(?string $password, ?string $initialAdminEmail = null): void
-    {
-        $this->app['env'] = self::LOCAL_ENVIRONMENT;
-        $this->configureSeeder($password, $initialAdminEmail);
-    }
-
-    private function configureSeeder(?string $password, ?string $initialAdminEmail = null): void
-    {
-        config([
-            'development_seed.user_password' => $password,
-            'initial_admin.email' => $initialAdminEmail,
-        ]);
     }
 
     private function runSeeder(): void
     {
-        $this->app->make(DevelopmentSeeder::class)->setContainer($this->app)->run();
+        $this->seed(DevelopmentSeeder::class);
     }
 }

@@ -12,14 +12,14 @@ cp .env.example .env
 php artisan key:generate
 ```
 
-Fill in the database values and the initial admin values in `.env`, then create the tables and seed the tags and the initial admin.
+Fill in the database values in `.env`, then create the tables and seed the tags and the test users.
 
 ```
 php artisan migrate
 php artisan db:seed
 ```
 
-For local demo data, set `DEVELOPMENT_USER_PASSWORD` in `.env` and run `php artisan db:seed --class=DevelopmentSeeder`.
+For demo service requests as well, run `php artisan db:seed --class=DevelopmentSeeder`. Each run adds another forty requests.
 
 ## Running
 

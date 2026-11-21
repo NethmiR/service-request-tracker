@@ -17,6 +17,8 @@ The repository holds two applications.
 - **backend** is a Laravel 13 REST API on PHP 8.3 with PostgreSQL. It uses Laravel Sanctum in SPA cookie mode.
 - **frontend** is a Next.js 16 application with TypeScript and the App Router.
 
+Sanctum in SPA cookie mode was chosen over API tokens or JWT because the browser never holds a readable token. The session lives in an HttpOnly cookie, every state changing request is protected by CSRF, and sessions are stored on the server, which makes signing out, listing sessions and clearing sessions take effect immediately.
+
 The full specification is in the [implementation plan](docs/plan/implementation-plan.md). Each phase has its own plan in [docs/plan/phases](docs/plan/phases).
 
 ## Prerequisites
@@ -61,7 +63,6 @@ Run every command in this section from the `backend` folder.
 4. Create an empty PostgreSQL database, then open `.env` and fill in these values.
    - `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME` and `DB_PASSWORD` for that database.
    - `DB_SSLMODE`. Keep `require` when the database server accepts SSL. A local PostgreSQL server installed with default settings has no SSL, so set `DB_SSLMODE=disable` for it on your own machine only.
-   - `INITIAL_ADMIN_NAME`, `INITIAL_ADMIN_EMAIL` and `INITIAL_ADMIN_PASSWORD` for the first admin account.
 
 5. Create the tables.
 
@@ -69,27 +70,35 @@ Run every command in this section from the `backend` folder.
    php artisan migrate
    ```
 
-6. Seed the data every environment needs.
+6. Seed the tags and the test users.
 
    ```
    php artisan db:seed
    ```
 
-`db:seed` creates the four tags (Hardware, Software, Network and Other) and the initial admin. Running it again changes nothing.
+`db:seed` creates the four tags (Hardware, Software, Network and Other) and the test users below. Running it again changes nothing.
 
-The seeder refuses to run when `INITIAL_ADMIN_PASSWORD` does not satisfy the password policy, and its error names the variable to fix. The placeholder value in `.env.example` is rejected on purpose. A valid password has at least twelve characters with upper and lower case letters, a number and a symbol. In production it must also not appear in a known data breach.
+## Test Users and Demo Data
 
-The initial admin must change this password on first sign in, so the value in `.env` is only used once.
+`php artisan db:seed` creates these test users.
 
-## Demo Data
+| Email | Password | Name | Role |
+| --- | --- | --- | --- |
+| `tech1@test.com` | `Tech1@test.com` | Technician 1 | Technician |
+| `admin1@test.com` | `Admin1@test.com` | Administrator 1 | Admin |
+| `admin2@test.com` | `Admin2@test.com` | Administrator 2 | Admin |
+| `req1@test.com` | `Req1@test.com` | Requester 1 | Requester |
+| `tech2@test.com` | `Tech2@test.com` | Technician 2 | Technician |
 
-To fill a local database with demo technicians, requesters and service requests that have moved through the workflow, set `DEVELOPMENT_USER_PASSWORD` in `.env` to a password that satisfies the policy, then run this from the `backend` folder.
+The test user seeder skips any email that already exists and creates the users without a pending password change. The passwords are written in the seeder on purpose, so never run `db:seed` against a shared or production database.
+
+To also fill the database with service requests that have moved through the workflow, run this from the `backend` folder.
 
 ```
 php artisan db:seed --class=DevelopmentSeeder
 ```
 
-The seeder runs only when `APP_ENV=local`. It creates two technicians and three requesters with `@example.test` emails, all using `DEVELOPMENT_USER_PASSWORD` and none with a pending password change, plus forty requests spread over the last twelve months. Run `php artisan db:seed` first, because the demo requests also use the initial admin.
+It creates the tags and the test users first, then forty requests spread over the last twelve months. Each run adds another forty, so use `php artisan migrate:fresh --seed` followed by this command to start again from a clean database. The requests are raised by the requester and the admins and handled by the technicians and the admins.
 
 ## Frontend Setup
 
@@ -123,7 +132,7 @@ Start the frontend from the `frontend` folder in a second terminal. It listens o
 npm run dev
 ```
 
-Open http://localhost:3000 and sign in with `INITIAL_ADMIN_EMAIL` and `INITIAL_ADMIN_PASSWORD`. You are asked to choose a new password first.
+Open http://localhost:3000 and sign in with one of the users listed in [Test Users and Demo Data](#test-users-and-demo-data).
 
 Both applications run on `localhost`, so the browser shares the session cookie between them and `SESSION_DOMAIN` stays empty. Open the frontend through `localhost` and not `127.0.0.1`, because `SANCTUM_STATEFUL_DOMAINS` and `FRONTEND_URL` name `localhost`.
 
@@ -182,10 +191,6 @@ Every application reads its settings from its own `.env` file. Never commit a `.
 | `BCRYPT_ROUNDS` | Cost of password hashing | `12` | `12` or higher |
 | `CACHE_STORE` | Store for rate limit counters | `database` | `database` |
 | `QUEUE_CONNECTION` | Queue driver. The application dispatches no jobs | `sync` | `sync` |
-| `INITIAL_ADMIN_NAME` | Name of the first admin | Any name | The real admin name |
-| `INITIAL_ADMIN_EMAIL` | Email of the first admin | Any email | The real admin email |
-| `INITIAL_ADMIN_PASSWORD` | First password of the first admin, changed on first sign in | A password that satisfies the policy | A strong password, removed from the server after the first seed |
-| `DEVELOPMENT_USER_PASSWORD` | Password of the demo users | A password that satisfies the policy | Not used |
 | `SIGN_IN_MAX_FAILURES_PER_EMAIL_AND_IP` | Failed sign ins allowed per email and address | `5` | `5` |
 | `SIGN_IN_MAX_FAILURES_PER_IP` | Failed sign ins allowed per address | `20` | `20` |
 | `SIGN_IN_DECAY_SECONDS` | Window of the sign in limits in seconds | `60` | `60` |
@@ -278,7 +283,7 @@ php artisan route:cache
 php artisan event:cache
 ```
 
-On the first deploy only, run `php artisan db:seed --force` after the migration to create the tags and the initial admin, then remove `INITIAL_ADMIN_PASSWORD` from the server environment.
+On the first deploy only, run `php artisan db:seed --force` after the migration to create the tags.
 
 Do not use `php artisan optimize`, because its view cache step fails in this API only backend, which has no views. `migrate:fresh`, `migrate:refresh`, `migrate:reset` and `db:wipe` are refused in production.
 
@@ -310,3 +315,22 @@ The database cache removes an expired row only when the same key is read again. 
 - The overview figures are read outside a transaction, so a change made while the page loads can make one figure briefly disagree with another. A refresh shows a consistent state.
 - Lists keep their page number in component state, so a page refresh returns to the first page.
 - Authentication audit records are stored but have no viewing screen.
+
+## AI Use & Verification
+
+The full statement is in the [AI usage declaration](docs/reports/ai-usage-declaration.docx).
+
+**Tools used**
+
+- Claude Code (desktop app, VS Code extension and CLI) for planning, design and implementation.
+- ChatGPT (official website) for initial setup guides and quick knowledge lookups during development.
+
+**Work assisted**
+
+- The brainstorming, product research and initial plan were done manually.
+- Claude assisted with the comprehensive phased plan, the separate plan for each phase, the design documents, the code and the tests. Issues found in testing were sent back to implementation until they were resolved.
+
+**Verification**
+
+- Every plan and design document was reviewed before the related implementation started.
+- Every code file was reviewed and tested before it became part of the project. The backend test suite and the frontend lint and type checks are the automated gate. The frontend was also verified by hand.
