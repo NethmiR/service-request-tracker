@@ -1,5 +1,5 @@
 // Form that lets the current assignee move a service request to one of the statuses the backend allows.
-// The remark is optional and a blank remark is sent as null.
+// The select starts on the current status, and the remark is optional with a blank remark sent as null.
 // A conflict or forbidden response is handed to the parent, which reloads the request.
 
 "use client";
@@ -40,27 +40,29 @@ interface ChangeStatusFormProps {
 }
 
 export function ChangeStatusForm({ serviceRequest, onChanged, onConflict }: ChangeStatusFormProps) {
+  const currentStatus = serviceRequest.status;
   const allowedStatuses = serviceRequest.available_actions.allowed_statuses;
-  const [status, setStatus] = useState<ServiceRequestStatus | "">("");
+  const [status, setStatus] = useState<ServiceRequestStatus>(currentStatus);
+  const isUnchanged = status === currentStatus;
   const [remark, setRemark] = useState("");
   const [errors, setErrors] =
     useState<FormErrors<ChangeServiceRequestStatusFieldName>>(emptyFormErrors);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   function resetForm() {
-    setStatus("");
+    setStatus(currentStatus);
     setRemark("");
     setErrors(emptyFormErrors());
   }
 
   function handleStatusChange(event: ChangeEvent<HTMLSelectElement>) {
-    setStatus(allowedStatuses.find((allowed) => allowed === event.target.value) ?? "");
+    setStatus(allowedStatuses.find((allowed) => allowed === event.target.value) ?? currentStatus);
   }
 
   async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (status === "") {
+    if (isUnchanged) {
       return;
     }
 
@@ -101,8 +103,7 @@ export function ChangeStatusForm({ serviceRequest, onChanged, onConflict }: Chan
           <Select
             {...controlProps}
             name={ChangeServiceRequestStatusField.Status}
-            options={statusOptions(allowedStatuses)}
-            placeholder={ServiceRequestWorkflowMessage.StatusPlaceholder}
+            options={statusOptions(currentStatus, allowedStatuses)}
             value={status}
             onChange={handleStatusChange}
             disabled={isSubmitting}
@@ -117,7 +118,7 @@ export function ChangeStatusForm({ serviceRequest, onChanged, onConflict }: Chan
         disabled={isSubmitting}
       />
       <div className="flex justify-end">
-        <Button type="submit" isLoading={isSubmitting}>
+        <Button type="submit" isLoading={isSubmitting} disabled={isUnchanged}>
           {ServiceRequestWorkflowMessage.StatusSubmit}
         </Button>
       </div>

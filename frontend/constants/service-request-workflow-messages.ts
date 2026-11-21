@@ -1,5 +1,5 @@
 // Text for the request dashboard, the assign to me and reassign dialogs and the status change controls.
-// Also formats the workflow notifications and builds the status options from the statuses the backend allows.
+// Also formats the workflow notifications and builds the status options from the current status and the allowed ones.
 
 import type { SelectOption } from "@/components/shared/select";
 import { SERVICE_REQUEST_STATUS_LABELS } from "@/constants/enum-labels";
@@ -35,8 +35,7 @@ export const ServiceRequestWorkflowMessage = {
   ReassignSubmit: "Reassign",
   WorkSectionTitle: "Work on this request",
   WorkSectionDescription: "Take the request, hand it over or move it to its next status.",
-  StatusLabel: "New status",
-  StatusPlaceholder: "Choose a status",
+  StatusLabel: "Status",
   StatusSubmit: "Change status",
   RequestAssigned: "The request has been assigned to you.",
   BackToDashboard: "Back to requests",
@@ -50,11 +49,19 @@ export function formatStatusChangedNotification(status: ServiceRequestStatus): s
   return `The request has been moved to ${SERVICE_REQUEST_STATUS_LABELS[status]}.`;
 }
 
+export function formatCurrentStatusOption(status: ServiceRequestStatus): string {
+  return `${SERVICE_REQUEST_STATUS_LABELS[status]} (current)`;
+}
+
 export function statusOptions(
-  statuses: readonly ServiceRequestStatus[],
+  currentStatus: ServiceRequestStatus,
+  allowedStatuses: readonly ServiceRequestStatus[],
 ): SelectOption<ServiceRequestStatus>[] {
-  return statuses.map((status) => ({
-    value: status,
-    label: SERVICE_REQUEST_STATUS_LABELS[status],
-  }));
+  return [
+    { value: currentStatus, label: formatCurrentStatusOption(currentStatus), disabled: true },
+    ...allowedStatuses.map((status) => ({
+      value: status,
+      label: SERVICE_REQUEST_STATUS_LABELS[status],
+    })),
+  ];
 }

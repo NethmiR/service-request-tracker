@@ -92,6 +92,7 @@ export function ServiceRequestWorkflowSection({
     >
       {allowed_statuses.length > 0 && (
         <ChangeStatusForm
+          key={serviceRequest.status}
           serviceRequest={serviceRequest}
           onChanged={handleStatusChanged}
           onConflict={handleConflict}
