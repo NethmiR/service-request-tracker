@@ -1,17 +1,20 @@
 <?php
 
-// Creates service requests, lists the requests of one user and loads a request with its histories.
-// Creation writes the request, its tags and the initial status record in one transaction.
+// Creates service requests, lists the requests of one user or of everyone for the dashboard and loads a request with its histories.
+// Also lists the staff users a request can be assigned to, and creation writes the request, its tags and the initial status record in one transaction.
 
 namespace App\Services\ServiceRequests;
 
 use App\Data\ServiceRequests\NewServiceRequest;
 use App\Enums\ServiceRequestStatus;
 use App\Enums\ServiceRequestTag;
+use App\Enums\UserRole;
 use App\Models\ServiceRequest;
 use App\Models\Tag;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 
 final class ServiceRequestService
@@ -62,16 +65,36 @@ final class ServiceRequestService
 
     public function paginateRequestsOf(User $requester): LengthAwarePaginator
     {
-        return ServiceRequest::query()
-            ->with(self::SUMMARY_RELATIONS)
+        return $this->summaryQuery()
             ->where('requested_by_user_id', $requester->getKey())
-            ->orderByDesc('created_at')
-            ->orderByDesc('id')
             ->paginate(self::PAGE_SIZE);
+    }
+
+    public function paginateAllRequests(): LengthAwarePaginator
+    {
+        return $this->summaryQuery()->paginate(self::PAGE_SIZE);
+    }
+
+    public function listAssignableUsers(): Collection
+    {
+        return User::query()
+            ->select(['id', 'name'])
+            ->whereIn('role', UserRole::staffValues())
+            ->orderBy('name')
+            ->orderBy('id')
+            ->get();
     }
 
     public function loadDetail(ServiceRequest $serviceRequest): ServiceRequest
     {
         return $serviceRequest->load(self::DETAIL_RELATIONS);
+    }
+
+    private function summaryQuery(): Builder
+    {
+        return ServiceRequest::query()
+            ->with(self::SUMMARY_RELATIONS)
+            ->orderByDesc('created_at')
+            ->orderByDesc('id');
     }
 }

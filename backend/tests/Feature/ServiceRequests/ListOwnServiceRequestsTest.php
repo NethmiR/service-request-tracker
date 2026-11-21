@@ -26,7 +26,7 @@ class ListOwnServiceRequestsTest extends TestCase
 
     private const string MY_REQUESTS_ROUTE = '/api/service-requests/mine';
 
-    private const array SUMMARY_FIELDS = ['id', 'title', 'status', 'tags', 'requested_by', 'assignee', 'created_at'];
+    private const array SUMMARY_FIELDS = ['id', 'title', 'status', 'tags', 'requested_by', 'assignee', 'created_at', 'available_actions'];
 
     private const array USER_REFERENCE_FIELDS = ['id', 'name'];
 
@@ -122,6 +122,20 @@ class ListOwnServiceRequestsTest extends TestCase
         $this->assertMatchesRegularExpression(self::ISO_8601_UTC_PATTERN, $item['created_at']);
         $this->assertEqualsCanonicalizing(self::USER_REFERENCE_FIELDS, array_keys($item['requested_by']));
         $this->assertSame([ServiceRequestTag::Hardware->value, ServiceRequestTag::Software->value], $item['tags']);
+    }
+
+    public function test_requester_is_offered_no_actions(): void
+    {
+        $requester = $this->signInAs(User::factory()->requester()->create());
+        $this->createServiceRequestFor($requester);
+
+        $this->getJson(self::MY_REQUESTS_ROUTE)
+            ->assertOk()
+            ->assertJsonPath('data.0.available_actions', [
+                'can_assign_to_self' => false,
+                'can_reassign' => false,
+                'allowed_statuses' => [],
+            ]);
     }
 
     public function test_current_assignee_is_the_latest_assignee(): void

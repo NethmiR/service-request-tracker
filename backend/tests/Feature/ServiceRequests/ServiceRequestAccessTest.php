@@ -33,10 +33,29 @@ class ServiceRequestAccessTest extends TestCase
 
     private const string NON_NUMERIC_SERVICE_REQUEST_ID = 'abc';
 
+    private const array STAFF_ROUTE_NAMES = [
+        'service-requests.index',
+        'service-requests.assignees',
+        'service-requests.assign',
+        'service-requests.reassign',
+        'service-requests.status',
+    ];
+
+    private const array WORKFLOW_ROUTE_NAMES = [
+        'service-requests.assign',
+        'service-requests.reassign',
+        'service-requests.status',
+    ];
+
     private const array ROUTES = [
         'service-requests.store' => ['POST', '/api/service-requests'],
         'service-requests.mine' => ['GET', '/api/service-requests/mine'],
         'service-requests.show' => ['GET', self::SHOW_ROUTE],
+        'service-requests.index' => ['GET', '/api/service-requests'],
+        'service-requests.assignees' => ['GET', '/api/service-requests/assignees'],
+        'service-requests.assign' => ['POST', self::SHOW_ROUTE.'/assignment'],
+        'service-requests.reassign' => ['POST', self::SHOW_ROUTE.'/reassignment'],
+        'service-requests.status' => ['PATCH', self::SHOW_ROUTE.'/status'],
     ];
 
     public static function serviceRequestRoutes(): array
@@ -100,6 +119,35 @@ class ServiceRequestAccessTest extends TestCase
         $this->getJson($this->resolveUri(self::SHOW_ROUTE, self::NON_NUMERIC_SERVICE_REQUEST_ID))
             ->assertNotFound()
             ->assertJsonPath('code', ErrorCode::NotFound->value);
+    }
+
+    public function test_requester_is_forbidden_on_every_staff_route_for_existing_and_unknown_requests(): void
+    {
+        $requester = $this->signInAs(User::factory()->requester()->create());
+        $serviceRequest = $this->createServiceRequestFor($requester);
+
+        foreach (self::STAFF_ROUTE_NAMES as $name) {
+            [$method, $uri] = self::ROUTES[$name];
+
+            foreach ([$serviceRequest->id, self::UNKNOWN_SERVICE_REQUEST_ID] as $serviceRequestId) {
+                $this->json($method, $this->resolveUri($uri, (string) $serviceRequestId))
+                    ->assertForbidden()
+                    ->assertJsonPath('code', ErrorCode::Forbidden->value);
+            }
+        }
+    }
+
+    public function test_technician_receives_not_found_for_an_unknown_id_on_each_workflow_route(): void
+    {
+        $this->signInAs(User::factory()->technician()->create());
+
+        foreach (self::WORKFLOW_ROUTE_NAMES as $name) {
+            [$method, $uri] = self::ROUTES[$name];
+
+            $this->json($method, $this->resolveUri($uri, (string) self::UNKNOWN_SERVICE_REQUEST_ID))
+                ->assertNotFound()
+                ->assertJsonPath('code', ErrorCode::NotFound->value);
+        }
     }
 
     private function resolveUri(string $uri, string $serviceRequestId): string

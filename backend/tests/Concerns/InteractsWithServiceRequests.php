@@ -1,16 +1,18 @@
 <?php
 
 // Prepares service requests and their histories for feature tests.
-// Assignments are written through the history factories, standing in for the workflow that arrives in Phase 6.
+// Assignments are written either through the history factories or through the real workflow service.
 
 namespace Tests\Concerns;
 
+use App\Data\ServiceRequests\SelfAssignment;
 use App\Enums\ServiceRequestStatus;
 use App\Enums\ServiceRequestTag;
 use App\Models\ServiceRequest;
 use App\Models\ServiceRequestAssigneeHistory;
 use App\Models\ServiceRequestStatusHistory;
 use App\Models\User;
+use App\Services\ServiceRequests\ServiceRequestWorkflowService;
 use Database\Factories\ServiceRequestFactory;
 
 trait InteractsWithServiceRequests
@@ -50,11 +52,42 @@ trait InteractsWithServiceRequests
             ->withRemark(self::ASSIGNMENT_REMARK)
             ->create();
 
+        if ($previousAssignee !== null) {
+            return;
+        }
+
         ServiceRequestStatusHistory::factory()
             ->for($serviceRequest)
-            ->transition($serviceRequest->status, ServiceRequestStatus::Assigned, $previousAssignee ?? $assignee)
+            ->transition($serviceRequest->status, ServiceRequestStatus::Assigned, $assignee)
             ->create();
 
         $serviceRequest->forceFill(['status' => ServiceRequestStatus::Assigned])->save();
+    }
+
+    protected function createServiceRequestInStatus(ServiceRequestStatus $status, ?User $assignee = null): ServiceRequest
+    {
+        $serviceRequest = $this->createServiceRequestFor(User::factory()->requester()->create());
+
+        if ($status === ServiceRequestStatus::Open) {
+            return $serviceRequest;
+        }
+
+        $this->assignThroughWorkflow($serviceRequest, $assignee ?? User::factory()->technician()->create());
+        $serviceRequest->refresh();
+
+        if ($status !== ServiceRequestStatus::Assigned) {
+            $serviceRequest->forceFill(['status' => $status])->save();
+        }
+
+        return $serviceRequest;
+    }
+
+    protected function assignThroughWorkflow(ServiceRequest $serviceRequest, User $assignee): ServiceRequest
+    {
+        return app(ServiceRequestWorkflowService::class)->assignToSelf(
+            $assignee,
+            $serviceRequest,
+            new SelfAssignment(self::ASSIGNMENT_REMARK),
+        );
     }
 }

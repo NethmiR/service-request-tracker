@@ -1,5 +1,5 @@
 // Layout of every page for technicians and admins only, guarded by RequireRole with the staff roles.
-// Other roles are sent to their home page. Phase 6 adds the requests dashboard to this group.
+// Holds the overview and the request dashboard, and other roles are sent to their home page.
 
 import type { ReactNode } from "react";
 import { RequireRole } from "@/components/auth/require-role";

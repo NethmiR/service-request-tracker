@@ -19,4 +19,9 @@ enum UserRole: string
     {
         return [self::Admin, self::Technician];
     }
+
+    public static function staffValues(): array
+    {
+        return array_map(fn (self $role): string => $role->value, self::staff());
+    }
 }

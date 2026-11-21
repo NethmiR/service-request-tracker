@@ -14,6 +14,7 @@ return [
     'CONFLICT' => 'The request conflicts with the current state of the resource.',
     'INVALID_STATUS_TRANSITION' => 'The request cannot be moved to the selected status.',
     'STATUS_UNCHANGED' => 'The request already has the selected status.',
+    'ASSIGNEE_UNCHANGED' => 'The request is already assigned to the selected user.',
     'CONCURRENT_UPDATE' => 'The request was changed by someone else. Please reload and try again.',
     'CURRENT_SESSION_NOT_CLEARABLE' => 'The current session cannot be ended here. Use sign out instead.',
     'CSRF_TOKEN_MISMATCH' => 'Your session has expired. Please refresh the page and try again.',

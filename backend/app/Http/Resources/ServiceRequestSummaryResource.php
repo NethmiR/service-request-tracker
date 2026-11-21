@@ -1,10 +1,11 @@
 <?php
 
-// Shapes a service request for the request lists.
-// Whitelists the list fields and resolves the current assignee from the latest assignee history record.
+// Shapes a service request for the request lists, resolving the current assignee from the latest assignee history record.
+// Whitelists the list fields and adds the workflow actions the viewing user may take on the request.
 
 namespace App\Http\Resources;
 
+use App\Data\ServiceRequests\AvailableActions;
 use App\Models\Tag;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -23,6 +24,7 @@ class ServiceRequestSummaryResource extends JsonResource
             'requested_by' => new UserReferenceResource($this->requester),
             'assignee' => $assignee === null ? null : new UserReferenceResource($assignee),
             'created_at' => $this->created_at->toIso8601ZuluString(),
+            'available_actions' => new AvailableActionsResource(AvailableActions::for($this->resource, $request->user())),
         ];
     }
 }

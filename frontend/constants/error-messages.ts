@@ -14,6 +14,7 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
   [ErrorCode.Conflict]: "This change conflicts with the current state of the request.",
   [ErrorCode.InvalidStatusTransition]: "The request cannot be moved to the selected status.",
   [ErrorCode.StatusUnchanged]: "The request already has the selected status.",
+  [ErrorCode.AssigneeUnchanged]: "The request is already assigned to this person.",
   [ErrorCode.ConcurrentUpdate]:
     "Someone else changed this request first. Please review the latest version and try again.",
   [ErrorCode.CurrentSessionNotClearable]:

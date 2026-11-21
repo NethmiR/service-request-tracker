@@ -1,6 +1,6 @@
 // Loads one record of any resource and reloads it on demand while ignoring responses that arrive late.
 // A not found error stays in the failed state so the page can show its own not found message.
-// Callers pass a stable loader so the record is not fetched again on every render.
+// Callers pass a stable loader, and a record returned by a write can replace the loaded one without a new fetch.
 
 "use client";
 
@@ -16,6 +16,7 @@ export type ResourceState<Resource> =
 export interface ResourceResult<Resource> {
   state: ResourceState<Resource>;
   reload: () => Promise<void>;
+  replace: (resource: Resource) => void;
 }
 
 export type ResourceLoader<Resource> = () => Promise<Resource>;
@@ -46,6 +47,11 @@ export function useResource<Resource>(load: ResourceLoader<Resource>): ResourceR
     }
   }, [load]);
 
+  const replace = useCallback((resource: Resource) => {
+    latestRequestRef.current += 1;
+    setState({ status: LoadStatus.Loaded, resource });
+  }, []);
+
   useEffect(() => {
     const requests = latestRequestRef;
     requests.current += 1;
@@ -62,5 +68,5 @@ export function useResource<Resource>(load: ResourceLoader<Resource>): ResourceR
     };
   }, [load]);
 
-  return useMemo(() => ({ state, reload }), [state, reload]);
+  return useMemo(() => ({ state, reload, replace }), [state, reload, replace]);
 }

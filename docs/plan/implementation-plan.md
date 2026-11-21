@@ -107,7 +107,7 @@ Technicians and admins have a dashboard listing all service requests, newest fir
 ### 3.9 Assignment
 
 - A technician or admin can assign an OPEN request to themselves. The status automatically becomes ASSIGNED.
-- Once assigned, only the user currently assigned can reassign the request to another technician or admin. The new assignee must be different from the current one. The status is set to ASSIGNED for the new assignee.
+- Once a request has an assignee, only the user currently assigned can reassign it to another technician or admin, in any status. The new assignee must be different from the current one. Reassignment does not change the status.
 - A remark is mandatory for every assignment and reassignment.
 - Each assignment writes exactly one assignee history record and, when the status changes, exactly one status history record, all in the same database transaction.
 - When two users try to take the same open request at the same time, exactly one succeeds and the other receives a conflict response.
@@ -117,6 +117,7 @@ Technicians and admins have a dashboard listing all service requests, newest fir
 - The statuses are OPEN, ASSIGNED, IN_PROGRESS and RESOLVED. A new request is OPEN.
 - A request leaves OPEN only through assignment and can never return to OPEN.
 - Only the current assignee can change the status. Allowed target statuses are ASSIGNED, IN_PROGRESS and RESOLVED.
+- The current assignee may move a RESOLVED request back to ASSIGNED or IN_PROGRESS.
 - Setting a request to the status it already has is rejected.
 - Every change is validated against the latest stored state of the request inside a locked transaction. If another user changed the request first and the change is no longer valid, it is rejected with a conflict response and nothing is written.
 - Transition rules live in one central place on the backend. The frontend shows only actions the current user is allowed to take, but the backend remains the single source of truth.
@@ -403,9 +404,3 @@ Each phase leaves the system in a working, testable state and builds on the prev
 - Complete the README with setup, migration, seeding and test commands for both applications.
 
 **Done when** the full test suite passes and a fresh setup works from the documented commands alone.
-
-## 8. Assumptions to Confirm
-
-- Reassigning a request sets its status to ASSIGNED for the new assignee.
-- The assignee can still change the status of a RESOLVED request to ASSIGNED or IN_PROGRESS, since only a return to OPEN is prohibited.
-- A request must have at least one tag.

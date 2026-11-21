@@ -5,16 +5,12 @@
 
 namespace App\Data\ServiceRequests;
 
-use App\Enums\ServiceRequestTag;
 use InvalidArgumentException;
 
 final readonly class NewServiceRequest
 {
     private const string EMPTY_TAGS_MESSAGE = 'A service request needs at least one tag.';
 
-    /**
-     * @param  list<ServiceRequestTag>  $tags
-     */
     public function __construct(
         public string $title,
         public string $description,

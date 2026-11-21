@@ -58,6 +58,11 @@ class ShowServiceRequestTest extends TestCase
                     'requested_by' => ['id' => $requester->id, 'name' => $requester->name],
                     'assignee' => null,
                     'created_at' => $serviceRequest->created_at->toIso8601ZuluString(),
+                    'available_actions' => [
+                        'can_assign_to_self' => false,
+                        'can_reassign' => false,
+                        'allowed_statuses' => [],
+                    ],
                     'status_history' => [
                         [
                             'id' => $initialRecord->id,
@@ -129,14 +134,14 @@ class ShowServiceRequestTest extends TestCase
         $this->assertSame($firstTechnician->id, $data['assignee_history'][1]['assigned_to']['id']);
         $this->assertNull($data['assignee_history'][1]['assigned_from']);
 
-        $this->assertCount(3, $data['status_history']);
+        $this->assertSame(ServiceRequestStatus::Assigned->value, $data['status']);
+        $this->assertCount(2, $data['status_history']);
         $this->assertSame($firstTechnician->id, $data['status_history'][0]['changed_by']['id']);
-        $this->assertSame($firstTechnician->id, $data['status_history'][1]['changed_by']['id']);
-        $this->assertSame(ServiceRequestStatus::Open->value, $data['status_history'][1]['from_status']);
-        $this->assertSame(ServiceRequestStatus::Assigned->value, $data['status_history'][1]['to_status']);
-        $this->assertNull($data['status_history'][2]['from_status']);
-        $this->assertNull($data['status_history'][2]['changed_by']);
-        $this->assertSame(ServiceRequestStatus::Open->value, $data['status_history'][2]['to_status']);
+        $this->assertSame(ServiceRequestStatus::Open->value, $data['status_history'][0]['from_status']);
+        $this->assertSame(ServiceRequestStatus::Assigned->value, $data['status_history'][0]['to_status']);
+        $this->assertNull($data['status_history'][1]['from_status']);
+        $this->assertNull($data['status_history'][1]['changed_by']);
+        $this->assertSame(ServiceRequestStatus::Open->value, $data['status_history'][1]['to_status']);
 
         $this->assertDescendingTimes(array_column($data['status_history'], 'created_at'));
         $this->assertDescendingTimes(array_column($data['assignee_history'], 'created_at'));

@@ -4,6 +4,7 @@
 export enum HttpStatus {
   Unauthorized = 401,
   Forbidden = 403,
+  Conflict = 409,
   CsrfTokenMismatch = 419,
   UnprocessableContent = 422,
   TooManyRequests = 429,

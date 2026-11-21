@@ -1,7 +1,8 @@
 <?php
 
-// Decides which users may view a service request.
-// The requester and anyone who passes the view all service requests Gate may view it, and everyone else is told it does not exist.
+// Decides which users may view a service request and who may work on it.
+// Viewing is open to the requester and to anyone who passes the view all Gate, and others are told it does not exist.
+// Reassigning and changing the status are open only to the current assignee, and everyone else is forbidden.
 
 namespace App\Policies;
 
@@ -19,5 +20,20 @@ final class ServiceRequestPolicy
         }
 
         return Response::denyAsNotFound();
+    }
+
+    public function reassign(User $user, ServiceRequest $serviceRequest): Response
+    {
+        return $this->allowCurrentAssignee($user, $serviceRequest);
+    }
+
+    public function changeStatus(User $user, ServiceRequest $serviceRequest): Response
+    {
+        return $this->allowCurrentAssignee($user, $serviceRequest);
+    }
+
+    private function allowCurrentAssignee(User $user, ServiceRequest $serviceRequest): Response
+    {
+        return $serviceRequest->isAssignedTo($user) ? Response::allow() : Response::deny();
     }
 }

@@ -9,8 +9,13 @@ use App\Http\Controllers\Auth\ChangePasswordController;
 use App\Http\Controllers\Auth\CurrentUserController;
 use App\Http\Controllers\Auth\SignInController;
 use App\Http\Controllers\Auth\SignOutController;
+use App\Http\Controllers\ServiceRequests\AssignServiceRequestController;
+use App\Http\Controllers\ServiceRequests\ChangeServiceRequestStatusController;
 use App\Http\Controllers\ServiceRequests\CreateServiceRequestController;
 use App\Http\Controllers\ServiceRequests\ListOwnServiceRequestsController;
+use App\Http\Controllers\ServiceRequests\ListServiceRequestAssigneesController;
+use App\Http\Controllers\ServiceRequests\ListServiceRequestsController;
+use App\Http\Controllers\ServiceRequests\ReassignServiceRequestController;
 use App\Http\Controllers\ServiceRequests\ShowServiceRequestController;
 use App\Http\Controllers\Sessions\ClearOtherSessionsController;
 use App\Http\Controllers\Sessions\ClearSessionController;
@@ -50,6 +55,24 @@ Route::middleware(['auth:sanctum', ThrottleRequests::using(RateLimiterName::Api-
 
         Route::post('service-requests', CreateServiceRequestController::class)->name('service-requests.store');
         Route::get('service-requests/mine', ListOwnServiceRequestsController::class)->name('service-requests.mine');
+        Route::get('service-requests', ListServiceRequestsController::class)
+            ->middleware(Authorize::using(GateAbility::ViewAllServiceRequests->value))
+            ->name('service-requests.index');
+
+        Route::middleware(Authorize::using(GateAbility::HandleServiceRequests->value))->group(function (): void {
+            Route::get('service-requests/assignees', ListServiceRequestAssigneesController::class)
+                ->name('service-requests.assignees');
+            Route::post('service-requests/{serviceRequest}/assignment', AssignServiceRequestController::class)
+                ->whereNumber('serviceRequest')
+                ->name('service-requests.assign');
+            Route::post('service-requests/{serviceRequest}/reassignment', ReassignServiceRequestController::class)
+                ->whereNumber('serviceRequest')
+                ->name('service-requests.reassign');
+            Route::patch('service-requests/{serviceRequest}/status', ChangeServiceRequestStatusController::class)
+                ->whereNumber('serviceRequest')
+                ->name('service-requests.status');
+        });
+
         Route::get('service-requests/{serviceRequest}', ShowServiceRequestController::class)
             ->whereNumber('serviceRequest')
             ->name('service-requests.show');

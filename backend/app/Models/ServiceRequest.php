@@ -2,6 +2,7 @@
 
 // Represents an IT service request raised by a user, with its tags and both histories.
 // The current assignee is derived from the latest assignee history record and is never stored on the request.
+// It also answers whether a given user is the current assignee, which the workflow rules rely on.
 
 namespace App\Models;
 
@@ -52,6 +53,13 @@ class ServiceRequest extends Model
     public function currentAssignee(): ?User
     {
         return $this->currentAssigneeHistory?->assignedTo;
+    }
+
+    public function isAssignedTo(User $user): bool
+    {
+        $this->loadMissing('currentAssigneeHistory');
+
+        return $this->currentAssigneeHistory?->assigned_to_user_id === $user->getKey();
     }
 
     public function isRequestedBy(User $user): bool
