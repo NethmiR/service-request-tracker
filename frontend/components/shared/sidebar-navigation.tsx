@@ -3,16 +3,26 @@
 
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { SidebarNavigationGroup } from "@/components/shared/sidebar-navigation-group";
+import { SidebarNavigationLink } from "@/components/shared/sidebar-navigation-link";
 import { NavigationMessage } from "@/constants/navigation";
+import { NavigationItemKind } from "@/enums/ui/navigation-item-kind";
 import { useAuth } from "@/hooks/auth/use-auth";
-import { findActiveNavigationItem, navigationItemsForRole } from "@/lib/routing/navigation";
-import { mergeClassNames } from "@/lib/utilities/merge-class-names";
+import {
+  findActiveNavigationLink,
+  flattenNavigationLinks,
+  navigationItemsForRole,
+} from "@/lib/routing/navigation";
+import type { NavigationItem } from "@/types/shared/navigation-item";
 
 interface SidebarNavigationProps {
   onNavigate?: () => void;
   className?: string;
+}
+
+function navigationItemKey(item: NavigationItem): string {
+  return item.kind === NavigationItemKind.Link ? item.route : item.label;
 }
 
 export function SidebarNavigation({ onNavigate, className }: SidebarNavigationProps) {
@@ -24,33 +34,24 @@ export function SidebarNavigation({ onNavigate, className }: SidebarNavigationPr
   }
 
   const items = navigationItemsForRole(user.role);
-  const activeItem = findActiveNavigationItem(items, pathname);
+  const activeLink = findActiveNavigationLink(flattenNavigationLinks(items), pathname);
 
   return (
     <nav aria-label={NavigationMessage.NavigationLabel} className={className}>
       <ul className="flex flex-col gap-1">
-        {items.map((item) => {
-          const isActive = item.route === activeItem?.route;
-
-          return (
-            <li key={item.route}>
-              <Link
-                href={item.route}
-                aria-current={isActive ? "page" : undefined}
+        {items.map((item) => (
+          <li key={navigationItemKey(item)}>
+            {item.kind === NavigationItemKind.Link ? (
+              <SidebarNavigationLink
+                link={item}
+                isActive={item.route === activeLink?.route}
                 onNavigate={onNavigate}
-                className={mergeClassNames(
-                  "flex items-center rounded-lg px-3 py-2.5 text-base transition-colors",
-                  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
-                  isActive
-                    ? "bg-primary/15 font-semibold text-foreground"
-                    : "text-foreground hover:bg-surface-muted",
-                )}
-              >
-                {item.label}
-              </Link>
-            </li>
-          );
-        })}
+              />
+            ) : (
+              <SidebarNavigationGroup group={item} activeLink={activeLink} onNavigate={onNavigate} />
+            )}
+          </li>
+        ))}
       </ul>
     </nav>
   );

@@ -4,6 +4,7 @@
 export enum HttpStatus {
   Unauthorized = 401,
   Forbidden = 403,
+  Conflict = 409,
   CsrfTokenMismatch = 419,
   UnprocessableContent = 422,
   TooManyRequests = 429,
@@ -41,3 +42,5 @@ export const NETWORK_FAILURE_STATUS = 0;
 export const REQUEST_TIMEOUT_MILLISECONDS = 15000;
 
 export const PAGE_QUERY_PARAMETER = "page";
+
+export const FIRST_PAGE = 1;

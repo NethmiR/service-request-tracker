@@ -1,7 +1,7 @@
 <?php
 
 // Registers application wide services, container bindings and boot time configuration.
-// Defines the central password policy, the rate limiters, the Gates, the authorization policies and the strict model and database safeguards.
+// Defines the central password policy, the rate limiters, the Gates, the authorization policies, the trusted proxies and the strict model and database safeguards.
 
 namespace App\Providers;
 
@@ -10,9 +10,12 @@ use App\Data\Sessions\ActiveSession;
 use App\Enums\GateAbility;
 use App\Enums\RateLimiterName;
 use App\Enums\UserRole;
+use App\Models\ServiceRequest;
 use App\Models\User;
+use App\Policies\ServiceRequestPolicy;
 use App\Policies\SessionPolicy;
 use App\Services\Users\DisplayOnceTemporaryPasswordDelivery;
+use App\Support\Http\TrustedProxyConfigurator;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
@@ -43,6 +46,8 @@ class AppServiceProvider extends ServiceProvider
 
         Sanctum::getAccessTokenFromRequestUsing(fn (): ?string => null);
 
+        $this->configureTrustedProxies();
+
         $this->configureRateLimiting();
 
         $this->configureAuthorization();
@@ -56,6 +61,11 @@ class AppServiceProvider extends ServiceProvider
             ->symbols();
 
         return $this->app->isProduction() ? $policy->uncompromised() : $policy;
+    }
+
+    private function configureTrustedProxies(): void
+    {
+        TrustedProxyConfigurator::configure((array) config('trusted_proxies.addresses'));
     }
 
     private function configureRateLimiting(): void
@@ -94,6 +104,22 @@ class AppServiceProvider extends ServiceProvider
     {
         Gate::define(GateAbility::ManageUsers->value, fn (User $user): bool => $user->hasRole(UserRole::Admin));
 
+        Gate::define(
+            GateAbility::ViewAllServiceRequests->value,
+            fn (User $user): bool => in_array($user->role, UserRole::staff(), true),
+        );
+
+        Gate::define(
+            GateAbility::HandleServiceRequests->value,
+            fn (User $user): bool => in_array($user->role, UserRole::staff(), true),
+        );
+
+        Gate::define(
+            GateAbility::ViewOverview->value,
+            fn (User $user): bool => in_array($user->role, UserRole::staff(), true),
+        );
+
         Gate::policy(ActiveSession::class, SessionPolicy::class);
+        Gate::policy(ServiceRequest::class, ServiceRequestPolicy::class);
     }
 }

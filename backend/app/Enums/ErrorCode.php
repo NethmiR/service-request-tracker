@@ -26,6 +26,7 @@ enum ErrorCode: string
     case Conflict = 'CONFLICT';
     case InvalidStatusTransition = 'INVALID_STATUS_TRANSITION';
     case StatusUnchanged = 'STATUS_UNCHANGED';
+    case AssigneeUnchanged = 'ASSIGNEE_UNCHANGED';
     case ConcurrentUpdate = 'CONCURRENT_UPDATE';
     case CurrentSessionNotClearable = 'CURRENT_SESSION_NOT_CLEARABLE';
     case CsrfTokenMismatch = 'CSRF_TOKEN_MISMATCH';
@@ -42,7 +43,7 @@ enum ErrorCode: string
             self::Forbidden, self::PasswordChangeRequired => Response::HTTP_FORBIDDEN,
             self::NotFound => Response::HTTP_NOT_FOUND,
             self::MethodNotAllowed => Response::HTTP_METHOD_NOT_ALLOWED,
-            self::Conflict, self::InvalidStatusTransition, self::StatusUnchanged, self::ConcurrentUpdate, self::CurrentSessionNotClearable => Response::HTTP_CONFLICT,
+            self::Conflict, self::InvalidStatusTransition, self::StatusUnchanged, self::AssigneeUnchanged, self::ConcurrentUpdate, self::CurrentSessionNotClearable => Response::HTTP_CONFLICT,
             self::CsrfTokenMismatch => self::HTTP_CSRF_TOKEN_MISMATCH,
             self::ValidationFailed => Response::HTTP_UNPROCESSABLE_ENTITY,
             self::TooManyRequests => Response::HTTP_TOO_MANY_REQUESTS,

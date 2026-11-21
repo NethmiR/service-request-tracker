@@ -57,9 +57,6 @@ class TemporaryPasswordGeneratorTest extends TestCase
         }
     }
 
-    /**
-     * @return list<string>
-     */
     private function generatePasswords(): array
     {
         $generator = new TemporaryPasswordGenerator;

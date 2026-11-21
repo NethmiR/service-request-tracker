@@ -1,13 +1,15 @@
-// Native select with typed options of value and label.
+// Native select with typed options of value and label, each of which can be disabled.
 // An optional placeholder adds an empty first option that cannot be chosen again.
 
 import type { ComponentProps } from "react";
+import { ChevronDownIcon } from "@/components/shared/chevron-down-icon";
 import { FORM_CONTROL_CLASS_NAMES } from "@/components/shared/form-control-class-names";
 import { mergeClassNames } from "@/lib/utilities/merge-class-names";
 
 export interface SelectOption<Value extends string> {
   value: Value;
   label: string;
+  disabled?: boolean;
 }
 
 interface SelectProps<Value extends string> extends Omit<ComponentProps<"select">, "children"> {
@@ -41,25 +43,12 @@ export function Select<Value extends string>({
           </option>
         )}
         {options.map((option) => (
-          <option key={option.value} value={option.value}>
+          <option key={option.value} value={option.value} disabled={option.disabled}>
             {option.label}
           </option>
         ))}
       </select>
-      <svg
-        aria-hidden="true"
-        viewBox="0 0 16 16"
-        className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted"
-      >
-        <path
-          d="M4 6l4 4 4-4"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
+      <ChevronDownIcon className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted" />
     </div>
   );
 }

@@ -1,13 +1,14 @@
 <?php
 
 // Represents a person who signs in to the system with one of the three roles.
-// Tracks whether the user still has to change their password before using the system.
+// Tracks whether the user still has to change their password and links the service requests they raised.
 
 namespace App\Models;
 
 use App\Enums\UserRole;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Support\Str;
 
@@ -30,6 +31,11 @@ class User extends Authenticatable
     protected $attributes = [
         'password_changed_at' => null,
     ];
+
+    public function serviceRequests(): HasMany
+    {
+        return $this->hasMany(ServiceRequest::class, 'requested_by_user_id');
+    }
 
     public function requiresPasswordChange(): bool
     {

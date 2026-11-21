@@ -22,6 +22,15 @@ class ProtectedRoutesTest extends TestCase
 
     private const string USER_MANAGEMENT_ROUTE_PREFIX = 'users.';
 
+    private const array STAFF_ROUTE_GATES = [
+        'overview.show' => GateAbility::ViewOverview,
+        'service-requests.index' => GateAbility::ViewAllServiceRequests,
+        'service-requests.assignees' => GateAbility::HandleServiceRequests,
+        'service-requests.assign' => GateAbility::HandleServiceRequests,
+        'service-requests.reassign' => GateAbility::HandleServiceRequests,
+        'service-requests.status' => GateAbility::HandleServiceRequests,
+    ];
+
     private const array ALLOWED_WHILE_PASSWORD_CHANGE_PENDING = [
         'auth.user',
         'auth.sign-out',
@@ -85,9 +94,20 @@ class ProtectedRoutesTest extends TestCase
         $this->assertSame([], $unguarded);
     }
 
-    /**
-     * @return list<RegisteredRoute>
-     */
+    public function test_every_staff_route_requires_its_gate(): void
+    {
+        $routes = [];
+
+        foreach ($this->apiRoutes() as $route) {
+            $routes[(string) $route->getName()] = $route;
+        }
+
+        foreach (self::STAFF_ROUTE_GATES as $name => $ability) {
+            $this->assertArrayHasKey($name, $routes);
+            $this->assertContains(Authorize::using($ability->value), $routes[$name]->gatherMiddleware(), $name);
+        }
+    }
+
     private function apiRoutes(): array
     {
         return array_values(array_filter(

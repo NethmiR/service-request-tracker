@@ -1,8 +1,5 @@
 <?php
 
-// Entry point for seeding data required in every environment.
-// Seeds the initial admin, and Phase 5 adds the predefined tags.
-
 namespace Database\Seeders;
 
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
@@ -14,6 +11,9 @@ class DatabaseSeeder extends Seeder
 
     public function run(): void
     {
-        $this->call(InitialAdminSeeder::class);
+        $this->call([
+            TagSeeder::class,
+            TestUserSeeder::class,
+        ]);
     }
 }

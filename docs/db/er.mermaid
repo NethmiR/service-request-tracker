@@ -1,0 +1,72 @@
+erDiagram
+    users ||--o{ service_requests : "raises"
+    service_requests ||--|{ service_request_tag : "has"
+    tags ||--o{ service_request_tag : "labels"
+    service_requests ||--|{ service_request_status_histories : "status history"
+    users |o--o{ service_request_status_histories : "changed by"
+    service_requests ||--o{ service_request_assignee_histories : "assignee history"
+    users ||--o{ service_request_assignee_histories : "assigned to"
+    users |o--o{ service_request_assignee_histories : "assigned from"
+    users |o--o{ sessions : "owns"
+    users |o--o{ auth_audit_logs : "actor / target"
+
+    users {
+        bigint id PK
+        string name
+        string email UK
+        string password
+        string role
+        timestamptz password_changed_at
+        timestamptz created_at
+        timestamptz updated_at
+    }
+    service_requests {
+        bigint id PK
+        string title
+        text description
+        bigint requested_by_user_id FK
+        string status
+        timestamptz created_at
+        timestamptz updated_at
+    }
+    tags {
+        bigint id PK
+        string name UK
+    }
+    service_request_tag {
+        bigint service_request_id PK, FK
+        bigint tag_id PK, FK
+    }
+    service_request_status_histories {
+        bigint id PK
+        bigint service_request_id FK
+        string from_status
+        string to_status
+        bigint changed_by_user_id FK
+        string remark
+        timestamptz created_at
+    }
+    service_request_assignee_histories {
+        bigint id PK
+        bigint service_request_id FK
+        bigint assigned_from_user_id FK
+        bigint assigned_to_user_id FK
+        string remark
+        timestamptz created_at
+    }
+    sessions {
+        string id PK
+        bigint user_id FK
+        string ip_address
+        text user_agent
+        int last_activity
+    }
+    auth_audit_logs {
+        bigint id PK
+        string event
+        bigint actor_user_id FK
+        bigint target_user_id FK
+        string attempted_email
+        string ip_address
+        timestamptz created_at
+    }

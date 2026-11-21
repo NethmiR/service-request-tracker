@@ -1,10 +1,10 @@
 <?php
 
 // Queue connections and failed job storage.
-// The default connection is selected through the environment.
+// The application dispatches no jobs in this version, so the default connection is sync.
 
 return [
-    'default' => env('QUEUE_CONNECTION', 'database'),
+    'default' => env('QUEUE_CONNECTION', 'sync'),
 
     'connections' => [
         'sync' => [

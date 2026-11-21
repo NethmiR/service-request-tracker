@@ -98,16 +98,16 @@ A service request holds the following information.
 
 The current assignee is not stored on the request. It is derived from the latest assignee history record, and a request with no assignee history is unassigned.
 
-Any role can create a request. Every user has a My Requests page listing the requests they raised, newest first, with server side pagination. A request detail page shows all request fields together with the status history and the assignee history. Requesters can open only their own requests, while technicians and admins can open any request.
+Any role can create a request. Every user has a My Requests page listing the requests they raised, newest first, with server side pagination and server side filters by status and by current assignee. The assignee choices on this page are only the people currently assigned to the user's own requests. A request detail page shows all request fields together with the status history and the assignee history. Requesters can open only their own requests, while technicians and admins can open any request.
 
 ### 3.8 Request Dashboard
 
-Technicians and admins have a dashboard listing all service requests, newest first, with server side pagination. Open requests offer an action to assign them to the current user.
+Technicians and admins have a dashboard listing all service requests, newest first, with server side pagination and server side filters by status and by current assignee. The filters are validated, combine with each other and are kept in the pagination links. Open requests offer an action to assign them to the current user.
 
 ### 3.9 Assignment
 
 - A technician or admin can assign an OPEN request to themselves. The status automatically becomes ASSIGNED.
-- Once assigned, only the user currently assigned can reassign the request to another technician or admin. The new assignee must be different from the current one. The status is set to ASSIGNED for the new assignee.
+- Once a request has an assignee, only the user currently assigned can reassign it to another technician or admin, in any status. The new assignee must be different from the current one. Reassignment does not change the status.
 - A remark is mandatory for every assignment and reassignment.
 - Each assignment writes exactly one assignee history record and, when the status changes, exactly one status history record, all in the same database transaction.
 - When two users try to take the same open request at the same time, exactly one succeeds and the other receives a conflict response.
@@ -117,6 +117,7 @@ Technicians and admins have a dashboard listing all service requests, newest fir
 - The statuses are OPEN, ASSIGNED, IN_PROGRESS and RESOLVED. A new request is OPEN.
 - A request leaves OPEN only through assignment and can never return to OPEN.
 - Only the current assignee can change the status. Allowed target statuses are ASSIGNED, IN_PROGRESS and RESOLVED.
+- The current assignee may move a RESOLVED request back to ASSIGNED or IN_PROGRESS.
 - Setting a request to the status it already has is rejected.
 - Every change is validated against the latest stored state of the request inside a locked transaction. If another user changed the request first and the change is no longer valid, it is rejected with a conflict response and nothing is written.
 - Transition rules live in one central place on the backend. The frontend shows only actions the current user is allowed to take, but the backend remains the single source of truth.
@@ -125,9 +126,9 @@ Technicians and admins have a dashboard listing all service requests, newest fir
 
 Status history records hold the following.
 
-- From status
+- From status, which is empty only for the initial record written when the request is created
 - To status
-- Status changed by
+- Status changed by, which is empty only for the initial record written when the request is created
 - Timestamp
 - Remark, which is optional
 
@@ -138,15 +139,16 @@ Assignee history records hold the following.
 - Timestamp
 - Remark, which is mandatory
 
-History records are written only by the system as part of a successful change and are never edited or deleted. A failed change never creates history.
+History records are written only by the system as part of a successful change and are never edited or deleted. Creating a request writes one initial status record in the same transaction, with an empty from status, OPEN as the to status, an empty status changed by and no remark. The empty status changed by marks it as written by the system on creation. Every later status record has both a from status and a user. A failed change never creates history.
 
 ### 3.12 Overview Page
 
 The overview page is visible to technicians and admins.
 
 - Count boxes show the number of open, assigned and in progress requests.
-- A highlights section shows the current system state to review, namely the oldest open requests waiting for assignment, the unresolved requests assigned to the viewing user, the requests with no status change beyond a configurable number of days and the most recently resolved requests.
+- A highlights section shows the current system state to review, namely the oldest open requests waiting for assignment, the unresolved requests assigned to the viewing user, the unresolved requests with no status change beyond a configurable number of days and the most recently resolved requests.
 - Graphs show long term trends, namely requests created against requests resolved per month over the last twelve months, the distribution of requests by tag, the average resolution time per month and the current workload of each technician and admin.
+- A request counts as resolved once, in the month of its latest move to RESOLVED, and only while its status is RESOLVED. Its resolution time runs from its creation to that move. Months follow a configurable reporting time zone, which defaults to UTC.
 - All figures are computed with aggregate queries on indexed columns and delivered through a dedicated endpoint.
 
 ## 4. Data Model
@@ -155,14 +157,15 @@ All tables are created through reversible Laravel migrations. Enum columns are b
 
 - **users** holds name, a unique lowercase email, the password hash, the role and the time the password was last changed by the user. An empty value in that column means a password change is pending.
 - **sessions** is the Laravel database session table with user id, IP address, user agent, payload and last activity.
+- **cache** and **cache_locks** are the Laravel database cache tables that hold rate limit counters.
 - **auth_audit_logs** holds the audit fields described in section 3.5 with indexes on event type, user and time.
 - **tags** holds the four predefined tags, seeded from the tag enum.
 - **service_requests** holds title, description, the requesting user, status and timestamps. It is indexed on status, requesting user and creation time.
 - **service_request_tag** links requests and tags with a composite primary key.
-- **service_request_status_histories** holds the request, from status, to status, the user who made the change, the optional remark and the creation time. It is indexed on request and creation time.
+- **service_request_status_histories** holds the request, from status, to status, the user who made the change, the optional remark and the creation time. The from status and the user are empty only for the initial record written when the request is created, and a check constraint keeps them either both empty or both filled. It is indexed on request and creation time. It is also indexed on to status, request and creation time, which serves the resolution figures of the overview.
 - **service_request_assignee_histories** holds the request, the previous assignee, the new assignee, the mandatory remark and the creation time. It is indexed on request and creation time and on the new assignee. The latest record of each request identifies its current assignee.
 
-Seeders create the predefined tags and an initial admin whose credentials come from environment variables. Factories and a development seeder create demo users and requests for local use only.
+The database seeder creates the predefined tags and runs a test user seeder that creates fixed test users for each role. A development seeder, run separately, adds demo requests on top of them. Factories build users and requests for tests.
 
 ## 5. Security Requirements
 
@@ -193,6 +196,7 @@ CORS allows only the configured frontend origin with credentials enabled. Allowe
 - Sign in is rate limited per email and IP combination and per IP. Exceeding the limit returns 429 with a retry time and is recorded in the audit table.
 - Password change, admin password reset and user creation have their own rate limits.
 - All authenticated endpoints share a per user rate limit.
+- Rate limit counters are stored in the shared database cache, so the limits hold across several application servers.
 
 ### 5.6 Account Enumeration Prevention
 
@@ -229,6 +233,7 @@ Status codes are applied consistently and documented.
 - Production runs only over HTTPS with HSTS enabled.
 - Both applications send X-Content-Type-Options, X-Frame-Options, Referrer-Policy and Permissions-Policy headers. The frontend also sends a Content Security Policy.
 - Debug mode is disabled in production and server version details are not exposed.
+- When the API runs behind a load balancer or reverse proxy, only the configured proxy addresses are trusted to report the client address.
 
 ### 5.11 Secrets and Configuration
 
@@ -254,7 +259,7 @@ Password fields are excluded from logs and from flashed input. Production error 
 - Controllers stay thin and delegate to service classes that hold business logic. Data moves between layers through typed data transfer objects.
 - Form Requests validate input, Policies authorize, API Resources shape output and Eloquent models cast columns to PHP enums.
 - Domain errors are thrown as dedicated exception classes and mapped to HTTP responses in one central handler.
-- Every operation that writes more than one row runs inside a database transaction. Assignment and status changes lock the request row and re-validate its current status and assignee before writing, which serializes concurrent changes and keeps data consistent.
+- Every operation that writes more than one row runs inside a database transaction. Assignment and status changes lock the request row and re-validate its current status and assignee before writing, which serializes concurrent changes and keeps data consistent. A change that waits longer than a configurable lock timeout for the row lock is rejected with a conflict response and writes nothing.
 - The current assignee is resolved from the latest assignee history record through a single latest of many relation that is eager loaded in listings.
 - Queries eager load relations to avoid N+1 problems, use indexes and paginate on the server.
 - Dependencies are injected through constructors and swappable parts sit behind interfaces, following SOLID principles.
@@ -403,9 +408,3 @@ Each phase leaves the system in a working, testable state and builds on the prev
 - Complete the README with setup, migration, seeding and test commands for both applications.
 
 **Done when** the full test suite passes and a fresh setup works from the documented commands alone.
-
-## 8. Assumptions to Confirm
-
-- Reassigning a request sets its status to ASSIGNED for the new assignee.
-- The assignee can still change the status of a RESOLVED request to ASSIGNED or IN_PROGRESS, since only a return to OPEN is prohibited.
-- A request must have at least one tag.

@@ -11,6 +11,11 @@ export enum ApiEndpoint {
   Sessions = "/api/sessions",
   OtherSessions = "/api/sessions/others",
   Users = "/api/users",
+  ServiceRequests = "/api/service-requests",
+  MyServiceRequests = "/api/service-requests/mine",
+  MyServiceRequestAssignees = "/api/service-requests/mine/assignees",
+  ServiceRequestAssignees = "/api/service-requests/assignees",
+  Overview = "/api/overview",
 }
 
 export function sessionEndpoint(sessionIdentifier: string): string {
@@ -31,4 +36,20 @@ export function userSessionsEndpoint(userId: number): string {
 
 export function userSessionEndpoint(userId: number, sessionIdentifier: string): string {
   return `${userSessionsEndpoint(userId)}/${encodeURIComponent(sessionIdentifier)}`;
+}
+
+export function serviceRequestEndpoint(serviceRequestId: number): string {
+  return `${ApiEndpoint.ServiceRequests}/${serviceRequestId}`;
+}
+
+export function serviceRequestAssignmentEndpoint(serviceRequestId: number): string {
+  return `${serviceRequestEndpoint(serviceRequestId)}/assignment`;
+}
+
+export function serviceRequestReassignmentEndpoint(serviceRequestId: number): string {
+  return `${serviceRequestEndpoint(serviceRequestId)}/reassignment`;
+}
+
+export function serviceRequestStatusEndpoint(serviceRequestId: number): string {
+  return `${serviceRequestEndpoint(serviceRequestId)}/status`;
 }
