@@ -27,7 +27,7 @@ class ListServiceRequestsTest extends TestCase
 
     private const string DASHBOARD_ROUTE = '/api/service-requests';
 
-    private const array SUMMARY_FIELDS = ['id', 'title', 'status', 'tags', 'requested_by', 'assignee', 'created_at', 'available_actions'];
+    private const array SUMMARY_FIELDS = ['id', 'title', 'status', 'priority', 'tags', 'requested_by', 'assignee', 'created_at', 'available_actions'];
 
     private const int REQUESTS_ON_SECOND_PAGE = 2;
 

@@ -1,9 +1,10 @@
-// Presentational table of every service request for the dashboard, with requester, tags, status, assignee and creation time.
+// Presentational table of every service request for the dashboard, with requester, tags, status, priority, assignee and creation time.
 // Rows the backend marks as assignable to the viewer show an assign to me button, and the table holds no data loading.
 
 import {
   SERVICE_REQUEST_ASSIGNEE_COLUMN,
   SERVICE_REQUEST_CREATED_COLUMN,
+  SERVICE_REQUEST_PRIORITY_COLUMN,
   SERVICE_REQUEST_REQUESTED_BY_COLUMN,
   SERVICE_REQUEST_STATUS_COLUMN,
   SERVICE_REQUEST_TAGS_COLUMN,
@@ -54,6 +55,7 @@ export function ServiceRequestsTable({
     SERVICE_REQUEST_REQUESTED_BY_COLUMN,
     SERVICE_REQUEST_TAGS_COLUMN,
     SERVICE_REQUEST_STATUS_COLUMN,
+    SERVICE_REQUEST_PRIORITY_COLUMN,
     SERVICE_REQUEST_ASSIGNEE_COLUMN,
     SERVICE_REQUEST_CREATED_COLUMN,
     createAssignColumn(onAssign),

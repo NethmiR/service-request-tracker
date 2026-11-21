@@ -1,3 +1,6 @@
+// Loads one page of service request summaries with the given filters through the shared paginated hook.
+// Each filter is a dependency of the page loader, so changing any of them returns to page one.
+
 "use client";
 
 import { useCallback } from "react";
@@ -18,11 +21,11 @@ export function useServiceRequestSummaries(
   loadPage: ServiceRequestSummaryPageLoader,
   filters: ServiceRequestFilters,
 ): PaginatedResource<ServiceRequestSummary> {
-  const { status, assignee_id: assigneeId } = filters;
+  const { status, assignee_id: assigneeId, priority, search } = filters;
 
   const loadFilteredPage = useCallback(
-    (page: number) => loadPage(page, { status, assignee_id: assigneeId }),
-    [loadPage, status, assigneeId],
+    (page: number) => loadPage(page, { status, assignee_id: assigneeId, priority, search }),
+    [loadPage, status, assigneeId, priority, search],
   );
 
   return usePaginatedResource(loadFilteredPage);

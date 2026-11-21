@@ -1,11 +1,13 @@
 // Text for the My requests page, the new request form and the request detail page with both history timelines.
-// Also formats the history headings and field hints, and builds the tag options of the new request form.
+// Also formats the history headings and field hints, and builds the priority and tag options of the new request form.
 
 import type { SelectOption } from "@/components/shared/select";
 import {
+  SERVICE_REQUEST_PRIORITY_LABELS,
   SERVICE_REQUEST_STATUS_LABELS,
   SERVICE_REQUEST_TAG_LABELS,
 } from "@/constants/enum-labels";
+import { ServiceRequestPriority } from "@/enums/service-request-priority";
 import type { ServiceRequestStatus } from "@/enums/service-request-status";
 import { ServiceRequestTag } from "@/enums/service-request-tag";
 
@@ -18,6 +20,7 @@ export const ServiceRequestMessage = {
   TitleColumn: "Title",
   TagsColumn: "Tags",
   StatusColumn: "Status",
+  PriorityColumn: "Priority",
   AssigneeColumn: "Assignee",
   CreatedColumn: "Created",
   EmptyTitle: "No requests yet",
@@ -27,11 +30,15 @@ export const ServiceRequestMessage = {
   NewRequestTitle: "New request",
   NewRequestDescription: "Describe what you need and the IT Support team will pick it up.",
   FormTitle: "Request details",
-  FormDescription: "Give the request a short title, describe the problem and choose the matching tags.",
+  FormDescription: "Give the request a short title, describe the problem, choose its priority and choose the matching tags.",
   TitleLabel: "Title",
   TitlePlaceholder: "For example, laptop cannot connect to the office Wi-Fi",
   DescriptionLabel: "Description",
   DescriptionPlaceholder: "Include what happened, when it started and anything you have already tried.",
+  PriorityLabel: "Priority",
+  PriorityPlaceholder: "Select a priority",
+  PriorityHint: "Choose how urgent the request is. The priority cannot be changed later.",
+  PriorityRequired: "Select a priority.",
   TagsLegend: "Tags",
   TagsHint: "Choose every tag that applies.",
   TagsRequired: "Select at least one tag.",
@@ -98,3 +105,9 @@ export const SERVICE_REQUEST_TAG_OPTIONS: SelectOption<ServiceRequestTag>[] = Ob
   value: tag,
   label: SERVICE_REQUEST_TAG_LABELS[tag],
 }));
+
+export const SERVICE_REQUEST_PRIORITY_OPTIONS: SelectOption<ServiceRequestPriority>[] =
+  Object.values(ServiceRequestPriority).map((priority) => ({
+    value: priority,
+    label: SERVICE_REQUEST_PRIORITY_LABELS[priority],
+  }));

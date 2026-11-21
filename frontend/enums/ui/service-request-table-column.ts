@@ -6,6 +6,7 @@ export enum ServiceRequestTableColumn {
   RequestedBy = "requested-by",
   Tags = "tags",
   Status = "status",
+  Priority = "priority",
   Assignee = "assignee",
   CreatedAt = "created-at",
   Actions = "actions",

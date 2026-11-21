@@ -1,10 +1,11 @@
-// Presentational table of the signed in user's service requests with title, tags, status, assignee and creation time.
+// Presentational table of the signed in user's service requests with title, tags, status, priority, assignee and creation time.
 // The empty state links to the new request page, and the table holds no data loading.
 
 import Link from "next/link";
 import {
   SERVICE_REQUEST_ASSIGNEE_COLUMN,
   SERVICE_REQUEST_CREATED_COLUMN,
+  SERVICE_REQUEST_PRIORITY_COLUMN,
   SERVICE_REQUEST_STATUS_COLUMN,
   SERVICE_REQUEST_TAGS_COLUMN,
   SERVICE_REQUEST_TITLE_COLUMN,
@@ -20,6 +21,7 @@ const MY_SERVICE_REQUEST_COLUMNS: TableColumn<ServiceRequestSummary>[] = [
   SERVICE_REQUEST_TITLE_COLUMN,
   SERVICE_REQUEST_TAGS_COLUMN,
   SERVICE_REQUEST_STATUS_COLUMN,
+  SERVICE_REQUEST_PRIORITY_COLUMN,
   SERVICE_REQUEST_ASSIGNEE_COLUMN,
   SERVICE_REQUEST_CREATED_COLUMN,
 ];

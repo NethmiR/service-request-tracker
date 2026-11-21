@@ -1,6 +1,6 @@
 <?php
 
-// Creates demo service requests raised and handled by the test users, and moves many of them through the workflow.
+// Creates demo service requests with random priorities, raised and handled by the test users, and moves many of them through the workflow.
 // It is run by hand and is never called from the database seeder. It seeds the tags and the test users first.
 
 namespace Database\Seeders;
@@ -8,6 +8,7 @@ namespace Database\Seeders;
 use App\Data\ServiceRequests\Reassignment;
 use App\Data\ServiceRequests\SelfAssignment;
 use App\Data\ServiceRequests\StatusChange;
+use App\Enums\ServiceRequestPriority;
 use App\Enums\ServiceRequestStatus;
 use App\Enums\ServiceRequestTag;
 use App\Enums\UserRole;
@@ -96,6 +97,7 @@ class DevelopmentSeeder extends Seeder
             $requests[] = ServiceRequest::factory()
                 ->requestedBy($requestingUsers[$index % $userCount])
                 ->withTags(...$tags)
+                ->withPriority(fake()->randomElement(ServiceRequestPriority::cases()))
                 ->createdAt(CarbonImmutable::instance(fake()->dateTimeBetween($earliestTime)))
                 ->create();
         }

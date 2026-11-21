@@ -6,6 +6,7 @@
 namespace Tests\Feature\Infrastructure;
 
 use App\Enums\ErrorCode;
+use App\Enums\ServiceRequestPriority;
 use App\Enums\ServiceRequestStatus;
 use App\Enums\ServiceRequestTag;
 use App\Enums\UserRole;
@@ -28,6 +29,7 @@ class FrontendEnumParityTest extends TestCase
             'user role' => [UserRole::class, 'enums/user-role.ts'],
             'service request status' => [ServiceRequestStatus::class, 'enums/service-request-status.ts'],
             'service request tag' => [ServiceRequestTag::class, 'enums/service-request-tag.ts'],
+            'service request priority' => [ServiceRequestPriority::class, 'enums/service-request-priority.ts'],
             'error code' => [ErrorCode::class, 'enums/error-code.ts'],
         ];
     }

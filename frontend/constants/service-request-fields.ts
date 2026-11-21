@@ -7,6 +7,7 @@ export const CreateServiceRequestField = {
   Title: "title",
   Description: "description",
   Tags: "tags",
+  Priority: "priority",
 } as const satisfies Record<string, keyof CreateServiceRequestRequest>;
 
 export type CreateServiceRequestFieldName =

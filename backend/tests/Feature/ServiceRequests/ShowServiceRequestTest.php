@@ -54,6 +54,7 @@ class ShowServiceRequestTest extends TestCase
                     'title' => $serviceRequest->title,
                     'description' => $serviceRequest->description,
                     'status' => ServiceRequestStatus::Open->value,
+                    'priority' => $serviceRequest->priorityTag->name->value,
                     'tags' => [ServiceRequestTag::Software->value, ServiceRequestTag::Network->value],
                     'requested_by' => ['id' => $requester->id, 'name' => $requester->name],
                     'assignee' => null,

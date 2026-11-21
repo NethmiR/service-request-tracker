@@ -2,7 +2,7 @@
 
 ## Overview
 
-The IT Service Request Tracker lets employees of NNR Co. raise IT service requests and lets the IT Support division pick them up, assign them and resolve them. Every status change and every assignment is recorded in a history that is never edited.
+The IT Service Request Tracker lets employees of NNR Co. raise IT service requests and lets the IT Support division pick them up, assign them and resolve them. Every status change and every assignment is recorded in a history that is never edited. Each request carries a priority chosen when it is raised, and both request lists can be filtered by status, assignee and priority and searched by any part of the title.
 
 The system has three roles.
 
@@ -70,13 +70,15 @@ Run every command in this section from the `backend` folder.
    php artisan migrate
    ```
 
-6. Seed the tags and the test users.
+   On a database that already holds service requests, this gives every existing request the Medium priority.
+
+6. Seed the tags, the priorities and the test users.
 
    ```
    php artisan db:seed
    ```
 
-`db:seed` creates the four tags (Hardware, Software, Network and Other) and the test users below. Running it again changes nothing.
+`db:seed` creates the four tags (Hardware, Software, Network and Other), the four priorities (Low, Medium, High and Critical) and the test users below. Running it again changes nothing.
 
 ## Test Users and Demo Data
 
@@ -98,7 +100,7 @@ To also fill the database with service requests that have moved through the work
 php artisan db:seed --class=DevelopmentSeeder
 ```
 
-It creates the tags and the test users first, then forty requests spread over the last twelve months. Each run adds another forty, so use `php artisan migrate:fresh --seed` followed by this command to start again from a clean database. The requests are raised by the requester and the admins and handled by the technicians and the admins.
+It creates the tags, the priorities and the test users first, then forty requests with random priorities spread over the last twelve months. Each run adds another forty, so use `php artisan migrate:fresh --seed` followed by this command to start again from a clean database. The requests are raised by the requester and the admins and handled by the technicians and the admins.
 
 ## Frontend Setup
 
@@ -315,6 +317,8 @@ The database cache removes an expired row only when the same key is read again. 
 - The overview figures are read outside a transaction, so a change made while the page loads can make one figure briefly disagree with another. A refresh shows a consistent state.
 - Lists keep their page number in component state, so a page refresh returns to the first page.
 - Authentication audit records are stored but have no viewing screen.
+- The title search has no trigram index. It runs within the rows left by the other filters, which is enough for the expected volume. A `pg_trgm` index on `title` can be added later without changing the query.
+- Requests created before priorities were added all have the Medium priority, because their real priority was never recorded.
 
 ## AI Use & Verification
 
