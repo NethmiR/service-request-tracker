@@ -2,6 +2,7 @@
 // The title links to the request detail page, and My requests and the dashboard both build their tables from them.
 
 import Link from "next/link";
+import { ServiceRequestPriorityBadge } from "@/components/service-requests/service-request-priority-badge";
 import { ServiceRequestStatusBadge } from "@/components/service-requests/service-request-status-badge";
 import { ServiceRequestTags } from "@/components/service-requests/service-request-tags";
 import type { TableColumn } from "@/components/shared/table";
@@ -50,6 +51,12 @@ export const SERVICE_REQUEST_STATUS_COLUMN: TableColumn<ServiceRequestSummary> =
   key: ServiceRequestTableColumn.Status,
   header: ServiceRequestMessage.StatusColumn,
   cell: (serviceRequest) => <ServiceRequestStatusBadge status={serviceRequest.status} />,
+};
+
+export const SERVICE_REQUEST_PRIORITY_COLUMN: TableColumn<ServiceRequestSummary> = {
+  key: ServiceRequestTableColumn.Priority,
+  header: ServiceRequestMessage.PriorityColumn,
+  cell: (serviceRequest) => <ServiceRequestPriorityBadge priority={serviceRequest.priority} />,
 };
 
 export const SERVICE_REQUEST_ASSIGNEE_COLUMN: TableColumn<ServiceRequestSummary> = {

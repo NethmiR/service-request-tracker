@@ -1,7 +1,9 @@
-// Main section of the request detail page with the title, status, tags, people involved and description.
+// Main section of the request detail page with the title, status, priority, tags, people involved and description.
+// The priority is a read only badge because it is fixed when the request is created.
 // The description is plain text with its line breaks kept, so no user supplied HTML is ever rendered.
 
 import type { ReactNode } from "react";
+import { ServiceRequestPriorityBadge } from "@/components/service-requests/service-request-priority-badge";
 import { ServiceRequestStatusBadge } from "@/components/service-requests/service-request-status-badge";
 import { ServiceRequestTags } from "@/components/service-requests/service-request-tags";
 import { ContentSection } from "@/components/shared/content-section";
@@ -38,7 +40,7 @@ export function ServiceRequestDetails({ serviceRequest }: ServiceRequestDetailsP
       actions={<ServiceRequestStatusBadge status={serviceRequest.status} />}
       className="break-words"
     >
-      <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         <DetailItem label={ServiceRequestMessage.RequestedByLabel}>
           {serviceRequest.requested_by.name}
         </DetailItem>
@@ -53,6 +55,9 @@ export function ServiceRequestDetails({ serviceRequest }: ServiceRequestDetailsP
           <time dateTime={serviceRequest.created_at}>
             {formatDateTime(serviceRequest.created_at)}
           </time>
+        </DetailItem>
+        <DetailItem label={ServiceRequestMessage.PriorityLabel}>
+          <ServiceRequestPriorityBadge priority={serviceRequest.priority} />
         </DetailItem>
         <DetailItem label={ServiceRequestMessage.TagsLabel}>
           <ServiceRequestTags tags={serviceRequest.tags} />

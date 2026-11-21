@@ -1,5 +1,5 @@
-// Form that raises a new service request with a title, a description and at least one tag.
-// The tag and length checks are only a convenience, the backend validates again and sets the requester and status.
+// Form that raises a new service request with a title, a description, a priority and at least one tag.
+// The priority, tag and length checks are only a convenience, the backend validates again and sets the requester and status.
 // On success it shows a notification and opens the detail page of the new request.
 
 "use client";
@@ -13,6 +13,7 @@ import { Button, getButtonClassNames } from "@/components/shared/button";
 import { CheckboxGroup } from "@/components/shared/checkbox-group";
 import { FormField } from "@/components/shared/form-field";
 import { Input } from "@/components/shared/input";
+import { Select } from "@/components/shared/select";
 import { Textarea } from "@/components/shared/textarea";
 import { AppRoute, serviceRequestDetailRoute } from "@/constants/routes";
 import {
@@ -25,10 +26,12 @@ import {
   SERVICE_REQUEST_TITLE_MAX_LENGTH,
 } from "@/constants/service-request-limits";
 import {
+  SERVICE_REQUEST_PRIORITY_OPTIONS,
   SERVICE_REQUEST_TAG_OPTIONS,
   ServiceRequestMessage,
   formatCharacterLimit,
 } from "@/constants/service-request-messages";
+import type { ServiceRequestPriority } from "@/enums/service-request-priority";
 import type { ServiceRequestTag } from "@/enums/service-request-tag";
 import { AlertTone } from "@/enums/ui/alert-tone";
 import { ButtonVariant } from "@/enums/ui/button-variant";
@@ -41,48 +44,70 @@ import {
 } from "@/lib/forms/resolve-form-errors";
 import { ApiError } from "@/lib/http/api-error";
 import { isHandledByRouteGuards } from "@/lib/http/is-handled-by-route-guards";
+import { parseServiceRequestPriority } from "@/lib/service-requests/parse-service-request-priority";
 import { serviceRequestService } from "@/services/service-requests/service-request-service";
 import type { CreateServiceRequestRequest } from "@/types/service-requests/create-service-request-request";
 
 const DESCRIPTION_ROWS = 8;
+
+const NO_PRIORITY = "";
 
 export function CreateServiceRequestForm() {
   const router = useRouter();
   const { notify } = useNotification();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [priority, setPriority] = useState<ServiceRequestPriority | undefined>(undefined);
   const [tags, setTags] = useState<ServiceRequestTag[]>([]);
   const [errors, setErrors] =
     useState<FormErrors<CreateServiceRequestFieldName>>(emptyFormErrors);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  function handleTagsChange(nextTags: ServiceRequestTag[]) {
-    setTags(nextTags);
-
-    if (nextTags.length === 0) {
-      return;
-    }
-
+  function clearFieldError(field: CreateServiceRequestFieldName) {
     setErrors((current) => {
       const fieldErrors = { ...current.fieldErrors };
-      delete fieldErrors[CreateServiceRequestField.Tags];
+      delete fieldErrors[field];
 
       return { ...current, fieldErrors };
     });
   }
 
+  function handlePriorityChange(event: ChangeEvent<HTMLSelectElement>) {
+    const nextPriority = parseServiceRequestPriority(event.target.value);
+    setPriority(nextPriority);
+
+    if (nextPriority !== undefined) {
+      clearFieldError(CreateServiceRequestField.Priority);
+    }
+  }
+
+  function handleTagsChange(nextTags: ServiceRequestTag[]) {
+    setTags(nextTags);
+
+    if (nextTags.length > 0) {
+      clearFieldError(CreateServiceRequestField.Tags);
+    }
+  }
+
   async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
 
+    const fieldErrors: FormErrors<CreateServiceRequestFieldName>["fieldErrors"] = {};
+
+    if (priority === undefined) {
+      fieldErrors[CreateServiceRequestField.Priority] = ServiceRequestMessage.PriorityRequired;
+    }
+
     if (tags.length === 0) {
-      setErrors({
-        message: null,
-        fieldErrors: { [CreateServiceRequestField.Tags]: ServiceRequestMessage.TagsRequired },
-      });
+      fieldErrors[CreateServiceRequestField.Tags] = ServiceRequestMessage.TagsRequired;
+    }
+
+    if (priority === undefined || tags.length === 0) {
+      setErrors({ message: null, fieldErrors });
       return;
     }
 
-    const request: CreateServiceRequestRequest = { title, description, tags };
+    const request: CreateServiceRequestRequest = { title, description, priority, tags };
     setIsSubmitting(true);
     setErrors(emptyFormErrors());
 
@@ -139,6 +164,26 @@ export function CreateServiceRequestForm() {
             onChange={(event: ChangeEvent<HTMLTextAreaElement>) =>
               setDescription(event.target.value)
             }
+            disabled={isSubmitting}
+          />
+        )}
+      </FormField>
+      <FormField
+        label={ServiceRequestMessage.PriorityLabel}
+        hint={ServiceRequestMessage.PriorityHint}
+        error={errors.fieldErrors[CreateServiceRequestField.Priority]}
+        required
+      >
+        {(controlProps) => (
+          <Select
+            {...controlProps}
+            required={false}
+            aria-required
+            name={CreateServiceRequestField.Priority}
+            options={SERVICE_REQUEST_PRIORITY_OPTIONS}
+            placeholder={ServiceRequestMessage.PriorityPlaceholder}
+            value={priority ?? NO_PRIORITY}
+            onChange={handlePriorityChange}
             disabled={isSubmitting}
           />
         )}

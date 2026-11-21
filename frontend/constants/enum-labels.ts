@@ -1,6 +1,7 @@
 // Display labels for the enums shown in the UI.
 // Typed records make the build fail when an enum member has no label.
 
+import { ServiceRequestPriority } from "@/enums/service-request-priority";
 import { ServiceRequestStatus } from "@/enums/service-request-status";
 import { ServiceRequestTag } from "@/enums/service-request-tag";
 import { UserRole } from "@/enums/user-role";
@@ -23,4 +24,11 @@ export const SERVICE_REQUEST_TAG_LABELS: Record<ServiceRequestTag, string> = {
   [ServiceRequestTag.Software]: "Software",
   [ServiceRequestTag.Network]: "Network",
   [ServiceRequestTag.Other]: "Other",
+};
+
+export const SERVICE_REQUEST_PRIORITY_LABELS: Record<ServiceRequestPriority, string> = {
+  [ServiceRequestPriority.Low]: "Low",
+  [ServiceRequestPriority.Medium]: "Medium",
+  [ServiceRequestPriority.High]: "High",
+  [ServiceRequestPriority.Critical]: "Critical",
 };
