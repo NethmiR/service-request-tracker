@@ -5,6 +5,7 @@
 
 namespace Tests\Feature\Security;
 
+use App\Enums\ServiceRequestPriority;
 use App\Enums\ServiceRequestStatus;
 use App\Enums\ServiceRequestTag;
 use App\Enums\UserRole;
@@ -48,6 +49,7 @@ class SensitiveFieldExposureTest extends TestCase
         'password_changed_at',
         'service_request_id',
         'tag_id',
+        'priority_tag_id',
     ];
 
     private const string FORBIDDEN_KEY_SUFFIX = '_user_id';
@@ -138,6 +140,7 @@ class SensitiveFieldExposureTest extends TestCase
             'title' => 'Exposure check request',
             'description' => 'Created while checking response fields.',
             'tags' => [ServiceRequestTag::Software->value],
+            'priority' => ServiceRequestPriority::High->value,
         ])->assertCreated();
         $this->collect('service-requests.store', $created);
 

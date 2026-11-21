@@ -1,13 +1,15 @@
 <?php
 
 // Verifies creating a service request through the API.
-// Covers the response shape, the initial status record, trimming, ignored client fields and every validation failure.
+// Covers the response shape, the chosen priority, the initial status record, trimming, ignored client fields and every validation failure.
 
 namespace Tests\Feature\ServiceRequests;
 
 use App\Enums\ErrorCode;
+use App\Enums\ServiceRequestPriority;
 use App\Enums\ServiceRequestStatus;
 use App\Enums\ServiceRequestTag;
+use App\Models\PriorityTag;
 use App\Models\ServiceRequest;
 use App\Models\ServiceRequestStatusHistory;
 use App\Models\Tag;
@@ -40,6 +42,7 @@ class CreateServiceRequestTest extends TestCase
         'id',
         'title',
         'status',
+        'priority',
         'tags',
         'requested_by',
         'assignee',
@@ -65,6 +68,15 @@ class CreateServiceRequestTest extends TestCase
         ];
     }
 
+    public static function rolesWithPriorities(): array
+    {
+        return [
+            'admin' => ['admin', ServiceRequestPriority::Critical],
+            'technician' => ['technician', ServiceRequestPriority::Low],
+            'requester' => ['requester', ServiceRequestPriority::Medium],
+        ];
+    }
+
     public static function invalidPayloads(): array
     {
         return [
@@ -85,6 +97,10 @@ class CreateServiceRequestTest extends TestCase
                 'tags.0',
             ],
             'unknown tag' => [['tags' => ['PRINTER']], 'tags.0'],
+            'missing priority' => [['priority' => null], 'priority'],
+            'unknown priority' => [['priority' => 'URGENT'], 'priority'],
+            'lowercase priority' => [['priority' => 'high'], 'priority'],
+            'priority list' => [['priority' => [ServiceRequestPriority::High->value]], 'priority'],
         ];
     }
 
@@ -100,6 +116,7 @@ class CreateServiceRequestTest extends TestCase
             ->assertJsonPath('data.title', self::TITLE)
             ->assertJsonPath('data.description', self::DESCRIPTION)
             ->assertJsonPath('data.status', ServiceRequestStatus::Open->value)
+            ->assertJsonPath('data.priority', ServiceRequestPriority::High->value)
             ->assertJsonPath('data.tags', [ServiceRequestTag::Hardware->value, ServiceRequestTag::Network->value])
             ->assertJsonPath('data.requested_by', ['id' => $requester->id, 'name' => $requester->name])
             ->assertJsonPath('data.assignee', null)
@@ -112,6 +129,29 @@ class CreateServiceRequestTest extends TestCase
 
         $this->assertSame($serviceRequest->id, $response->json('data.id'));
         $this->assertSame($serviceRequest->created_at->toIso8601ZuluString(), $response->json('data.created_at'));
+    }
+
+    public function test_chosen_priority_is_stored_and_returned(): void
+    {
+        $this->signInAs(User::factory()->requester()->create());
+
+        $this->postJson(self::SERVICE_REQUESTS_ROUTE, $this->payload(priority: ServiceRequestPriority::Low->value))
+            ->assertCreated()
+            ->assertJsonPath('data.priority', ServiceRequestPriority::Low->value);
+
+        $this->assertSame(ServiceRequestPriority::Low, ServiceRequest::query()->sole()->priorityTag->name);
+    }
+
+    #[DataProvider('rolesWithPriorities')]
+    public function test_each_role_stores_its_own_priority(string $role, ServiceRequestPriority $priority): void
+    {
+        $this->signInAs(User::factory()->{$role}()->create());
+
+        $this->postJson(self::SERVICE_REQUESTS_ROUTE, $this->payload(priority: $priority->value))
+            ->assertCreated()
+            ->assertJsonPath('data.priority', $priority->value);
+
+        $this->assertSame($priority, ServiceRequest::query()->sole()->priorityTag->name);
     }
 
     public function test_creation_writes_exactly_one_initial_status_record(): void
@@ -178,6 +218,7 @@ class CreateServiceRequestTest extends TestCase
             'requested_by_user_id' => $otherUser->id,
             'requested_by' => ['id' => $otherUser->id, 'name' => $otherUser->name],
             'created_at' => self::CLIENT_SUPPLIED_CREATED_AT,
+            'priority_tag_id' => $this->priorityTagId(ServiceRequestPriority::Low),
         ])->assertCreated();
 
         $serviceRequest = ServiceRequest::query()->sole();
@@ -185,6 +226,7 @@ class CreateServiceRequestTest extends TestCase
         $this->assertNotSame(self::CLIENT_SUPPLIED_ID, $serviceRequest->id);
         $this->assertSame(ServiceRequestStatus::Open, $serviceRequest->status);
         $this->assertSame($requester->id, $serviceRequest->requested_by_user_id);
+        $this->assertSame(ServiceRequestPriority::High, $serviceRequest->priorityTag->name);
         $this->assertNotSame(self::CLIENT_SUPPLIED_CREATED_AT, $response->json('data.created_at'));
         $response->assertJsonPath('data.requested_by.id', $requester->id);
     }
@@ -216,12 +258,32 @@ class CreateServiceRequestTest extends TestCase
         $this->assertNothingWasWritten();
     }
 
+    public function test_priority_without_a_stored_row_is_rejected(): void
+    {
+        $this->signInAs(User::factory()->requester()->create());
+
+        PriorityTag::query()->where('name', ServiceRequestPriority::Critical->value)->delete();
+
+        $this->postJson(self::SERVICE_REQUESTS_ROUTE, $this->payload(priority: ServiceRequestPriority::Critical->value))
+            ->assertUnprocessable()
+            ->assertJsonPath('code', ErrorCode::ValidationFailed->value)
+            ->assertJsonValidationErrors(['priority']);
+
+        $this->assertNothingWasWritten();
+    }
+
     private function payload(
         string $title = self::TITLE,
         string $description = self::DESCRIPTION,
         array $tags = [ServiceRequestTag::Hardware->value],
+        string $priority = ServiceRequestPriority::High->value,
     ): array {
-        return ['title' => $title, 'description' => $description, 'tags' => $tags];
+        return ['title' => $title, 'description' => $description, 'tags' => $tags, 'priority' => $priority];
+    }
+
+    private function priorityTagId(ServiceRequestPriority $priority): int
+    {
+        return PriorityTag::query()->where('name', $priority->value)->sole()->getKey();
     }
 
     private function payloadWith(array $overrides): array

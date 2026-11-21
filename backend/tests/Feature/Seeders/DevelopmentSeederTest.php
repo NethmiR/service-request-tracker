@@ -1,9 +1,11 @@
 <?php
 
 // Verifies the development seeder that creates the test users and demo requests spread across the workflow statuses.
+// Every demo request must carry a priority.
 
 namespace Tests\Feature\Seeders;
 
+use App\Enums\ServiceRequestPriority;
 use App\Enums\ServiceRequestStatus;
 use App\Models\ServiceRequest;
 use App\Models\User;
@@ -51,13 +53,14 @@ class DevelopmentSeederTest extends TestCase
         }
 
         $requests = ServiceRequest::query()
-            ->with(['tags', 'statusHistories', 'assigneeHistories'])
+            ->with(['tags', 'priorityTag', 'statusHistories', 'assigneeHistories'])
             ->get();
         $earliestAllowed = now()->subMonths(DevelopmentSeeder::HISTORY_MONTHS)->subMinute();
         $reassignedCount = 0;
 
         foreach ($requests as $serviceRequest) {
             $this->assertNotEmpty($serviceRequest->tags);
+            $this->assertInstanceOf(ServiceRequestPriority::class, $serviceRequest->priorityTag?->name);
             $this->assertLessThanOrEqual(DevelopmentSeeder::MAXIMUM_TAGS_PER_REQUEST, $serviceRequest->tags->count());
             $this->assertTrue($serviceRequest->created_at->greaterThanOrEqualTo($earliestAllowed));
 

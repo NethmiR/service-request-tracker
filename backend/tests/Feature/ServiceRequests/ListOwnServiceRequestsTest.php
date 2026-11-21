@@ -26,7 +26,7 @@ class ListOwnServiceRequestsTest extends TestCase
 
     private const string MY_REQUESTS_ROUTE = '/api/service-requests/mine';
 
-    private const array SUMMARY_FIELDS = ['id', 'title', 'status', 'tags', 'requested_by', 'assignee', 'created_at', 'available_actions'];
+    private const array SUMMARY_FIELDS = ['id', 'title', 'status', 'priority', 'tags', 'requested_by', 'assignee', 'created_at', 'available_actions'];
 
     private const array USER_REFERENCE_FIELDS = ['id', 'name'];
 
