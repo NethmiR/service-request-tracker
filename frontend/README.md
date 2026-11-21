@@ -1,36 +1,25 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# NNR Co. IT Service Request Tracker Frontend
 
-## Getting Started
+Next.js 16 application with TypeScript and the App Router for the NNR Co. IT Service Request Tracker. It talks to the backend API with session cookies and never stores tokens in the browser.
 
-First, run the development server:
+The [root README](../README.md) is the full guide. It covers prerequisites, backend setup, the error codes, the production checklist and the known limitations.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Commands
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+| Command | What it does |
+| --- | --- |
+| `npm ci` | Installs the exact locked dependencies |
+| `npm run dev` | Starts the development server on http://localhost:3000 |
+| `npm run lint` | Runs ESLint |
+| `npm run typecheck` | Generates the Next.js route types, then runs the TypeScript compiler without emitting files |
+| `npm run build` | Builds the production bundle |
+| `npm run start` | Serves the production build |
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Environment Variables
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Copy `.env.example` to `.env` before the first run.
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Variable | Purpose |
+| --- | --- |
+| `NEXT_PUBLIC_API_URL` | Address of the backend API. It is written into the bundle at build time, so set the production value before `npm run build` |
+| `SESSION_COOKIE_NAME` | Name of the backend session cookie. It must equal the backend `SESSION_COOKIE` value |

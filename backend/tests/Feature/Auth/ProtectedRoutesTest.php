@@ -22,7 +22,8 @@ class ProtectedRoutesTest extends TestCase
 
     private const string USER_MANAGEMENT_ROUTE_PREFIX = 'users.';
 
-    private const array STAFF_SERVICE_REQUEST_GATES = [
+    private const array STAFF_ROUTE_GATES = [
+        'overview.show' => GateAbility::ViewOverview,
         'service-requests.index' => GateAbility::ViewAllServiceRequests,
         'service-requests.assignees' => GateAbility::HandleServiceRequests,
         'service-requests.assign' => GateAbility::HandleServiceRequests,
@@ -93,7 +94,7 @@ class ProtectedRoutesTest extends TestCase
         $this->assertSame([], $unguarded);
     }
 
-    public function test_every_staff_service_request_route_requires_its_gate(): void
+    public function test_every_staff_route_requires_its_gate(): void
     {
         $routes = [];
 
@@ -101,7 +102,7 @@ class ProtectedRoutesTest extends TestCase
             $routes[(string) $route->getName()] = $route;
         }
 
-        foreach (self::STAFF_SERVICE_REQUEST_GATES as $name => $ability) {
+        foreach (self::STAFF_ROUTE_GATES as $name => $ability) {
             $this->assertArrayHasKey($name, $routes);
             $this->assertContains(Authorize::using($ability->value), $routes[$name]->gatherMiddleware(), $name);
         }

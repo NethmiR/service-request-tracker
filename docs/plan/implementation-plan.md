@@ -157,6 +157,7 @@ All tables are created through reversible Laravel migrations. Enum columns are b
 
 - **users** holds name, a unique lowercase email, the password hash, the role and the time the password was last changed by the user. An empty value in that column means a password change is pending.
 - **sessions** is the Laravel database session table with user id, IP address, user agent, payload and last activity.
+- **cache** and **cache_locks** are the Laravel database cache tables that hold rate limit counters.
 - **auth_audit_logs** holds the audit fields described in section 3.5 with indexes on event type, user and time.
 - **tags** holds the four predefined tags, seeded from the tag enum.
 - **service_requests** holds title, description, the requesting user, status and timestamps. It is indexed on status, requesting user and creation time.
@@ -195,6 +196,7 @@ CORS allows only the configured frontend origin with credentials enabled. Allowe
 - Sign in is rate limited per email and IP combination and per IP. Exceeding the limit returns 429 with a retry time and is recorded in the audit table.
 - Password change, admin password reset and user creation have their own rate limits.
 - All authenticated endpoints share a per user rate limit.
+- Rate limit counters are stored in the shared database cache, so the limits hold across several application servers.
 
 ### 5.6 Account Enumeration Prevention
 
@@ -231,6 +233,7 @@ Status codes are applied consistently and documented.
 - Production runs only over HTTPS with HSTS enabled.
 - Both applications send X-Content-Type-Options, X-Frame-Options, Referrer-Policy and Permissions-Policy headers. The frontend also sends a Content Security Policy.
 - Debug mode is disabled in production and server version details are not exposed.
+- When the API runs behind a load balancer or reverse proxy, only the configured proxy addresses are trusted to report the client address.
 
 ### 5.11 Secrets and Configuration
 
@@ -256,7 +259,7 @@ Password fields are excluded from logs and from flashed input. Production error 
 - Controllers stay thin and delegate to service classes that hold business logic. Data moves between layers through typed data transfer objects.
 - Form Requests validate input, Policies authorize, API Resources shape output and Eloquent models cast columns to PHP enums.
 - Domain errors are thrown as dedicated exception classes and mapped to HTTP responses in one central handler.
-- Every operation that writes more than one row runs inside a database transaction. Assignment and status changes lock the request row and re-validate its current status and assignee before writing, which serializes concurrent changes and keeps data consistent.
+- Every operation that writes more than one row runs inside a database transaction. Assignment and status changes lock the request row and re-validate its current status and assignee before writing, which serializes concurrent changes and keeps data consistent. A change that waits longer than a configurable lock timeout for the row lock is rejected with a conflict response and writes nothing.
 - The current assignee is resolved from the latest assignee history record through a single latest of many relation that is eager loaded in listings.
 - Queries eager load relations to avoid N+1 problems, use indexes and paginate on the server.
 - Dependencies are injected through constructors and swappable parts sit behind interfaces, following SOLID principles.
