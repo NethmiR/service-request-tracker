@@ -12,7 +12,7 @@ cp .env.example .env
 php artisan key:generate
 ```
 
-Fill in the database values in `.env`, then create the tables and seed the tags and the test users.
+Fill in the database values in `.env`, then create the tables and seed the tags, the priorities and the test users.
 
 ```
 php artisan migrate

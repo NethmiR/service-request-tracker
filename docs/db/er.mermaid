@@ -2,6 +2,7 @@ erDiagram
     users ||--o{ service_requests : "raises"
     service_requests ||--|{ service_request_tag : "has"
     tags ||--o{ service_request_tag : "labels"
+    priority_tags ||--o{ service_requests : "prioritizes"
     service_requests ||--|{ service_request_status_histories : "status history"
     users |o--o{ service_request_status_histories : "changed by"
     service_requests ||--o{ service_request_assignee_histories : "assignee history"
@@ -25,11 +26,16 @@ erDiagram
         string title
         text description
         bigint requested_by_user_id FK
+        bigint priority_tag_id FK
         string status
         timestamptz created_at
         timestamptz updated_at
     }
     tags {
+        bigint id PK
+        string name UK
+    }
+    priority_tags {
         bigint id PK
         string name UK
     }
