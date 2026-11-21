@@ -92,17 +92,18 @@ A service request holds the following information.
 - Title
 - Description
 - Tags, chosen from the predefined set Hardware, Software, Network and Other. A request has one or more tags.
+- Priority, chosen from the predefined set Low, Medium, High and Critical. A request has exactly one priority, set on creation and never changed afterwards.
 - Requested by, which is always the signed in user taken from the session and never from client input
 - Creation timestamp
 - Status, which is always OPEN on creation regardless of client input
 
 The current assignee is not stored on the request. It is derived from the latest assignee history record, and a request with no assignee history is unassigned.
 
-Any role can create a request. Every user has a My Requests page listing the requests they raised, newest first, with server side pagination and server side filters by status and by current assignee. The assignee choices on this page are only the people currently assigned to the user's own requests. A request detail page shows all request fields together with the status history and the assignee history. Requesters can open only their own requests, while technicians and admins can open any request.
+Any role can create a request. Every user has a My Requests page listing the requests they raised, newest first, with server side pagination, server side filters by status, by current assignee and by priority, and a server side title search that matches any part of the title. The assignee choices on this page are only the people currently assigned to the user's own requests. A request detail page shows all request fields together with the status history and the assignee history. Requesters can open only their own requests, while technicians and admins can open any request.
 
 ### 3.8 Request Dashboard
 
-Technicians and admins have a dashboard listing all service requests, newest first, with server side pagination and server side filters by status and by current assignee. The filters are validated, combine with each other and are kept in the pagination links. Open requests offer an action to assign them to the current user.
+Technicians and admins have a dashboard listing all service requests, newest first, with server side pagination, server side filters by status, by current assignee and by priority, and a server side title search that matches any part of the title. The filters and the search are validated, combine with each other and are kept in the pagination links. Open requests offer an action to assign them to the current user.
 
 ### 3.9 Assignment
 
@@ -160,7 +161,8 @@ All tables are created through reversible Laravel migrations. Enum columns are b
 - **cache** and **cache_locks** are the Laravel database cache tables that hold rate limit counters.
 - **auth_audit_logs** holds the audit fields described in section 3.5 with indexes on event type, user and time.
 - **tags** holds the four predefined tags, seeded from the tag enum.
-- **service_requests** holds title, description, the requesting user, status and timestamps. It is indexed on status, requesting user and creation time.
+- **priority_tags** holds the four predefined priorities, seeded from the priority enum.
+- **service_requests** holds title, description, the requesting user, a required reference to its priority tag, status and timestamps. It is indexed on status, requesting user, priority tag and creation time.
 - **service_request_tag** links requests and tags with a composite primary key.
 - **service_request_status_histories** holds the request, from status, to status, the user who made the change, the optional remark and the creation time. The from status and the user are empty only for the initial record written when the request is created, and a check constraint keeps them either both empty or both filled. It is indexed on request and creation time. It is also indexed on to status, request and creation time, which serves the resolution figures of the overview.
 - **service_request_assignee_histories** holds the request, the previous assignee, the new assignee, the mandatory remark and the creation time. It is indexed on request and creation time and on the new assignee. The latest record of each request identifies its current assignee.
@@ -408,3 +410,23 @@ Each phase leaves the system in a working, testable state and builds on the prev
 - Complete the README with setup, migration, seeding and test commands for both applications.
 
 **Done when** the full test suite passes and a fresh setup works from the documented commands alone.
+
+### Phase 9. Request Priority and Title Search
+
+**Goal** is to give every service request a fixed priority and to let users find requests by title.
+
+**Backend**
+- Create the priority tags table seeded from a priority enum with the levels Low, Medium, High and Critical, and link every service request to exactly one priority tag. Existing requests receive Medium when the migration runs.
+- Require a priority when a request is created. No endpoint can change it afterwards.
+- Return the priority in the request list and detail responses.
+- Add a priority filter and a case insensitive title substring search to My Requests and the dashboard. Both are validated, combine with the status and assignee filters and are kept in the pagination links.
+- Add tests for priority on creation, its immutability, the priority filter, the title search and the combined filters.
+
+**Frontend**
+- Add the priority selection to the create request form and show the priority as a read only badge in both request lists and on the request detail page.
+- Add the priority filter and the title search box to the filter bar of My Requests and the dashboard.
+
+**Documentation**
+- Update the requirement and data model sections of this plan, the READMEs, the entity relationship diagram and the reports to describe priority and title search.
+
+**Done when** every new request carries the priority chosen at creation, the priority cannot be changed later, and both request lists can be filtered by priority and searched by any part of the title together with the existing filters.
