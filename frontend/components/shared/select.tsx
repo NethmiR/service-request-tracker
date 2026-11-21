@@ -1,4 +1,4 @@
-// Native select with typed options of value and label.
+// Native select with typed options of value and label, each of which can be disabled.
 // An optional placeholder adds an empty first option that cannot be chosen again.
 
 import type { ComponentProps } from "react";
@@ -8,6 +8,7 @@ import { mergeClassNames } from "@/lib/utilities/merge-class-names";
 export interface SelectOption<Value extends string> {
   value: Value;
   label: string;
+  disabled?: boolean;
 }
 
 interface SelectProps<Value extends string> extends Omit<ComponentProps<"select">, "children"> {
@@ -41,7 +42,7 @@ export function Select<Value extends string>({
           </option>
         )}
         {options.map((option) => (
-          <option key={option.value} value={option.value}>
+          <option key={option.value} value={option.value} disabled={option.disabled}>
             {option.label}
           </option>
         ))}
