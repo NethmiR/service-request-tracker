@@ -14,4 +14,5 @@ enum GateAbility: string
     case ManageUsers = 'manage-users';
     case ViewAllServiceRequests = 'view-all-service-requests';
     case HandleServiceRequests = 'handle-service-requests';
+    case ViewOverview = 'view-overview';
 }

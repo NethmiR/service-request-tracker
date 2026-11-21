@@ -106,6 +106,11 @@ class AppServiceProvider extends ServiceProvider
             fn (User $user): bool => in_array($user->role, UserRole::staff(), true),
         );
 
+        Gate::define(
+            GateAbility::ViewOverview->value,
+            fn (User $user): bool => in_array($user->role, UserRole::staff(), true),
+        );
+
         Gate::policy(ActiveSession::class, SessionPolicy::class);
         Gate::policy(ServiceRequest::class, ServiceRequestPolicy::class);
     }
