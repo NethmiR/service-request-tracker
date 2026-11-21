@@ -146,8 +146,9 @@ History records are written only by the system as part of a successful change an
 The overview page is visible to technicians and admins.
 
 - Count boxes show the number of open, assigned and in progress requests.
-- A highlights section shows the current system state to review, namely the oldest open requests waiting for assignment, the unresolved requests assigned to the viewing user, the requests with no status change beyond a configurable number of days and the most recently resolved requests.
+- A highlights section shows the current system state to review, namely the oldest open requests waiting for assignment, the unresolved requests assigned to the viewing user, the unresolved requests with no status change beyond a configurable number of days and the most recently resolved requests.
 - Graphs show long term trends, namely requests created against requests resolved per month over the last twelve months, the distribution of requests by tag, the average resolution time per month and the current workload of each technician and admin.
+- A request counts as resolved once, in the month of its latest move to RESOLVED, and only while its status is RESOLVED. Its resolution time runs from its creation to that move. Months follow a configurable reporting time zone, which defaults to UTC.
 - All figures are computed with aggregate queries on indexed columns and delivered through a dedicated endpoint.
 
 ## 4. Data Model
@@ -160,7 +161,7 @@ All tables are created through reversible Laravel migrations. Enum columns are b
 - **tags** holds the four predefined tags, seeded from the tag enum.
 - **service_requests** holds title, description, the requesting user, status and timestamps. It is indexed on status, requesting user and creation time.
 - **service_request_tag** links requests and tags with a composite primary key.
-- **service_request_status_histories** holds the request, from status, to status, the user who made the change, the optional remark and the creation time. The from status and the user are empty only for the initial record written when the request is created, and a check constraint keeps them either both empty or both filled. It is indexed on request and creation time.
+- **service_request_status_histories** holds the request, from status, to status, the user who made the change, the optional remark and the creation time. The from status and the user are empty only for the initial record written when the request is created, and a check constraint keeps them either both empty or both filled. It is indexed on request and creation time. It is also indexed on to status, request and creation time, which serves the resolution figures of the overview.
 - **service_request_assignee_histories** holds the request, the previous assignee, the new assignee, the mandatory remark and the creation time. It is indexed on request and creation time and on the new assignee. The latest record of each request identifies its current assignee.
 
 Seeders create the predefined tags and an initial admin whose credentials come from environment variables. Factories and a development seeder create demo users and requests for local use only.

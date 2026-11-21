@@ -9,6 +9,7 @@ use App\Http\Controllers\Auth\ChangePasswordController;
 use App\Http\Controllers\Auth\CurrentUserController;
 use App\Http\Controllers\Auth\SignInController;
 use App\Http\Controllers\Auth\SignOutController;
+use App\Http\Controllers\Overview\ShowOverviewController;
 use App\Http\Controllers\ServiceRequests\AssignServiceRequestController;
 use App\Http\Controllers\ServiceRequests\ChangeServiceRequestStatusController;
 use App\Http\Controllers\ServiceRequests\CreateServiceRequestController;
@@ -52,6 +53,10 @@ Route::middleware(['auth:sanctum', ThrottleRequests::using(RateLimiterName::Api-
         Route::delete('sessions/{sessionIdentifier}', ClearSessionController::class)
             ->where('sessionIdentifier', SessionIdentifier::PATTERN)
             ->name('sessions.destroy');
+
+        Route::get('overview', ShowOverviewController::class)
+            ->middleware(Authorize::using(GateAbility::ViewOverview->value))
+            ->name('overview.show');
 
         Route::post('service-requests', CreateServiceRequestController::class)->name('service-requests.store');
         Route::get('service-requests/mine', ListOwnServiceRequestsController::class)->name('service-requests.mine');
