@@ -98,11 +98,11 @@ A service request holds the following information.
 
 The current assignee is not stored on the request. It is derived from the latest assignee history record, and a request with no assignee history is unassigned.
 
-Any role can create a request. Every user has a My Requests page listing the requests they raised, newest first, with server side pagination. A request detail page shows all request fields together with the status history and the assignee history. Requesters can open only their own requests, while technicians and admins can open any request.
+Any role can create a request. Every user has a My Requests page listing the requests they raised, newest first, with server side pagination and server side filters by status and by current assignee. The assignee choices on this page are only the people currently assigned to the user's own requests. A request detail page shows all request fields together with the status history and the assignee history. Requesters can open only their own requests, while technicians and admins can open any request.
 
 ### 3.8 Request Dashboard
 
-Technicians and admins have a dashboard listing all service requests, newest first, with server side pagination. Open requests offer an action to assign them to the current user.
+Technicians and admins have a dashboard listing all service requests, newest first, with server side pagination and server side filters by status and by current assignee. The filters are validated, combine with each other and are kept in the pagination links. Open requests offer an action to assign them to the current user.
 
 ### 3.9 Assignment
 

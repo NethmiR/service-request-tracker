@@ -13,6 +13,7 @@ use App\Http\Controllers\Overview\ShowOverviewController;
 use App\Http\Controllers\ServiceRequests\AssignServiceRequestController;
 use App\Http\Controllers\ServiceRequests\ChangeServiceRequestStatusController;
 use App\Http\Controllers\ServiceRequests\CreateServiceRequestController;
+use App\Http\Controllers\ServiceRequests\ListOwnServiceRequestAssigneesController;
 use App\Http\Controllers\ServiceRequests\ListOwnServiceRequestsController;
 use App\Http\Controllers\ServiceRequests\ListServiceRequestAssigneesController;
 use App\Http\Controllers\ServiceRequests\ListServiceRequestsController;
@@ -60,6 +61,8 @@ Route::middleware(['auth:sanctum', ThrottleRequests::using(RateLimiterName::Api-
 
         Route::post('service-requests', CreateServiceRequestController::class)->name('service-requests.store');
         Route::get('service-requests/mine', ListOwnServiceRequestsController::class)->name('service-requests.mine');
+        Route::get('service-requests/mine/assignees', ListOwnServiceRequestAssigneesController::class)
+            ->name('service-requests.mine.assignees');
         Route::get('service-requests', ListServiceRequestsController::class)
             ->middleware(Authorize::using(GateAbility::ViewAllServiceRequests->value))
             ->name('service-requests.index');

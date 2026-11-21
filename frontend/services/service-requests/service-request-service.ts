@@ -16,6 +16,7 @@ import type { ChangeServiceRequestStatusRequest } from "@/types/service-requests
 import type { CreateServiceRequestRequest } from "@/types/service-requests/create-service-request-request";
 import type { ReassignServiceRequestRequest } from "@/types/service-requests/reassign-service-request-request";
 import type { ServiceRequestDetail } from "@/types/service-requests/service-request-detail";
+import type { ServiceRequestFilters } from "@/types/service-requests/service-request-filters";
 import type { ServiceRequestSummary } from "@/types/service-requests/service-request-summary";
 import type { ApiResourceResponse } from "@/types/shared/api-resource-response";
 import type { PaginatedResponse } from "@/types/shared/paginated-response";
@@ -31,16 +32,26 @@ export class ServiceRequestService extends BaseApiService {
     return response.data;
   }
 
-  async listServiceRequests(page: number): Promise<PaginatedResponse<ServiceRequestSummary>> {
-    return this.get<PaginatedResponse<ServiceRequestSummary>>(ApiEndpoint.ServiceRequests, {
-      params: { [PAGE_QUERY_PARAMETER]: page },
-    });
+  async listServiceRequests(
+    page: number,
+    filters: ServiceRequestFilters,
+  ): Promise<PaginatedResponse<ServiceRequestSummary>> {
+    return this.listSummaries(ApiEndpoint.ServiceRequests, page, filters);
   }
 
-  async listMyServiceRequests(page: number): Promise<PaginatedResponse<ServiceRequestSummary>> {
-    return this.get<PaginatedResponse<ServiceRequestSummary>>(ApiEndpoint.MyServiceRequests, {
-      params: { [PAGE_QUERY_PARAMETER]: page },
-    });
+  async listMyServiceRequests(
+    page: number,
+    filters: ServiceRequestFilters,
+  ): Promise<PaginatedResponse<ServiceRequestSummary>> {
+    return this.listSummaries(ApiEndpoint.MyServiceRequests, page, filters);
+  }
+
+  async listMyAssignees(): Promise<UserReference[]> {
+    const response = await this.get<ApiResourceResponse<UserReference[]>>(
+      ApiEndpoint.MyServiceRequestAssignees,
+    );
+
+    return response.data;
   }
 
   async getServiceRequest(serviceRequestId: number): Promise<ServiceRequestDetail> {
@@ -93,6 +104,16 @@ export class ServiceRequestService extends BaseApiService {
     >(serviceRequestStatusEndpoint(serviceRequestId), request);
 
     return response.data;
+  }
+
+  private async listSummaries(
+    endpoint: ApiEndpoint,
+    page: number,
+    filters: ServiceRequestFilters,
+  ): Promise<PaginatedResponse<ServiceRequestSummary>> {
+    return this.get<PaginatedResponse<ServiceRequestSummary>>(endpoint, {
+      params: { ...filters, [PAGE_QUERY_PARAMETER]: page },
+    });
   }
 }
 

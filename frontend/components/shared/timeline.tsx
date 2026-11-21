@@ -42,10 +42,13 @@ export function Timeline({
   return (
     <ol className={mergeClassNames("flex flex-col", className)}>
       {items.map((item) => (
-        <li key={item.key} className="group flex gap-4 pb-6 last:pb-0">
-          <div aria-hidden="true" className="flex flex-col items-center">
+        <li key={item.key} className="group relative flex gap-4 pb-6 last:pb-0">
+          <span
+            aria-hidden="true"
+            className="absolute top-3 -bottom-3 left-1.5 w-px -translate-x-1/2 bg-border group-last:hidden"
+          />
+          <div aria-hidden="true" className="relative flex flex-col items-center">
             <span className="mt-1.5 size-3 shrink-0 rounded-full border-2 border-primary bg-surface" />
-            <span className="mt-1 w-px flex-1 bg-border group-last:hidden" />
           </div>
           <div className="flex min-w-0 flex-1 flex-col gap-1">
             <p className="text-sm font-semibold text-foreground">{item.heading}</p>

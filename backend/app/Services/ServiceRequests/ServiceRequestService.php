@@ -6,6 +6,7 @@
 namespace App\Services\ServiceRequests;
 
 use App\Data\ServiceRequests\NewServiceRequest;
+use App\Data\ServiceRequests\ServiceRequestFilters;
 use App\Enums\ServiceRequestStatus;
 use App\Enums\ServiceRequestTag;
 use App\Enums\UserRole;
@@ -63,25 +64,41 @@ final class ServiceRequestService
         return $this->loadDetail($serviceRequest);
     }
 
-    public function paginateRequestsOf(User $requester): LengthAwarePaginator
+    public function paginateRequestsOf(User $requester, ServiceRequestFilters $filters): LengthAwarePaginator
     {
-        return $this->summaryQuery()
+        return $this->summaryQuery($filters)
             ->where('requested_by_user_id', $requester->getKey())
             ->paginate(self::PAGE_SIZE);
     }
 
-    public function paginateAllRequests(): LengthAwarePaginator
+    public function paginateAllRequests(ServiceRequestFilters $filters): LengthAwarePaginator
     {
-        return $this->summaryQuery()->paginate(self::PAGE_SIZE);
+        return $this->summaryQuery($filters)->paginate(self::PAGE_SIZE);
     }
 
     public function listAssignableUsers(): Collection
     {
-        return User::query()
-            ->select(['id', 'name'])
+        return $this->userReferenceQuery()
             ->whereIn('role', UserRole::staffValues())
-            ->orderBy('name')
-            ->orderBy('id')
+            ->get();
+    }
+
+    public function listCurrentAssigneesOfRequestsBy(User $requester): Collection
+    {
+        $assigneeId = (new User)->qualifyColumn('id');
+
+        return $this->userReferenceQuery()
+            ->whereExists(
+                ServiceRequest::query()
+                    ->where('requested_by_user_id', $requester->getKey())
+                    ->whereHas(
+                        'currentAssigneeHistory',
+                        fn (Builder $history): Builder => $history->whereColumn(
+                            $history->qualifyColumn('assigned_to_user_id'),
+                            $assigneeId,
+                        ),
+                    ),
+            )
             ->get();
     }
 
@@ -90,11 +107,33 @@ final class ServiceRequestService
         return $serviceRequest->load(self::DETAIL_RELATIONS);
     }
 
-    private function summaryQuery(): Builder
+    private function summaryQuery(ServiceRequestFilters $filters): Builder
     {
         return ServiceRequest::query()
             ->with(self::SUMMARY_RELATIONS)
+            ->when(
+                $filters->status !== null,
+                fn (Builder $query): Builder => $query->where('status', $filters->status),
+            )
+            ->when(
+                $filters->assigneeId !== null,
+                fn (Builder $query): Builder => $query->whereHas(
+                    'currentAssigneeHistory',
+                    fn (Builder $history): Builder => $history->where(
+                        $history->qualifyColumn('assigned_to_user_id'),
+                        $filters->assigneeId,
+                    ),
+                ),
+            )
             ->orderByDesc('created_at')
             ->orderByDesc('id');
+    }
+
+    private function userReferenceQuery(): Builder
+    {
+        return User::query()
+            ->select(['id', 'name'])
+            ->orderBy('name')
+            ->orderBy('id');
     }
 }

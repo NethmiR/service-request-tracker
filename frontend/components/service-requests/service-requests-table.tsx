@@ -11,6 +11,7 @@ import {
 } from "@/components/service-requests/service-request-columns";
 import { Button } from "@/components/shared/button";
 import { Table, type TableColumn } from "@/components/shared/table";
+import { ServiceRequestFilterMessage } from "@/constants/service-request-filter-messages";
 import { ServiceRequestWorkflowMessage } from "@/constants/service-request-workflow-messages";
 import { ButtonVariant } from "@/enums/ui/button-variant";
 import { ComponentSize } from "@/enums/ui/component-size";
@@ -39,10 +40,15 @@ function createAssignColumn(
 
 interface ServiceRequestsTableProps {
   serviceRequests: ServiceRequestSummary[];
+  isFiltered: boolean;
   onAssign: (serviceRequest: ServiceRequestSummary) => void;
 }
 
-export function ServiceRequestsTable({ serviceRequests, onAssign }: ServiceRequestsTableProps) {
+export function ServiceRequestsTable({
+  serviceRequests,
+  isFiltered,
+  onAssign,
+}: ServiceRequestsTableProps) {
   const columns: TableColumn<ServiceRequestSummary>[] = [
     SERVICE_REQUEST_TITLE_COLUMN,
     SERVICE_REQUEST_REQUESTED_BY_COLUMN,
@@ -59,8 +65,16 @@ export function ServiceRequestsTable({ serviceRequests, onAssign }: ServiceReque
       rows={serviceRequests}
       rowKey={(serviceRequest) => serviceRequest.id}
       caption={ServiceRequestWorkflowMessage.TableCaption}
-      emptyTitle={ServiceRequestWorkflowMessage.EmptyTitle}
-      emptyDescription={ServiceRequestWorkflowMessage.EmptyDescription}
+      emptyTitle={
+        isFiltered
+          ? ServiceRequestFilterMessage.EmptyTitle
+          : ServiceRequestWorkflowMessage.EmptyTitle
+      }
+      emptyDescription={
+        isFiltered
+          ? ServiceRequestFilterMessage.EmptyDescription
+          : ServiceRequestWorkflowMessage.EmptyDescription
+      }
     />
   );
 }

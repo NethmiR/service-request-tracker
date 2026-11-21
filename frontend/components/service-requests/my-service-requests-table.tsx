@@ -12,6 +12,7 @@ import {
 import { getButtonClassNames } from "@/components/shared/button";
 import { Table, type TableColumn } from "@/components/shared/table";
 import { AppRoute } from "@/constants/routes";
+import { ServiceRequestFilterMessage } from "@/constants/service-request-filter-messages";
 import { ServiceRequestMessage } from "@/constants/service-request-messages";
 import type { ServiceRequestSummary } from "@/types/service-requests/service-request-summary";
 
@@ -25,21 +26,33 @@ const MY_SERVICE_REQUEST_COLUMNS: TableColumn<ServiceRequestSummary>[] = [
 
 interface MyServiceRequestsTableProps {
   serviceRequests: ServiceRequestSummary[];
+  isFiltered: boolean;
 }
 
-export function MyServiceRequestsTable({ serviceRequests }: MyServiceRequestsTableProps) {
+export function MyServiceRequestsTable({
+  serviceRequests,
+  isFiltered,
+}: MyServiceRequestsTableProps) {
   return (
     <Table
       columns={MY_SERVICE_REQUEST_COLUMNS}
       rows={serviceRequests}
       rowKey={(serviceRequest) => serviceRequest.id}
       caption={ServiceRequestMessage.TableCaption}
-      emptyTitle={ServiceRequestMessage.EmptyTitle}
-      emptyDescription={ServiceRequestMessage.EmptyDescription}
+      emptyTitle={
+        isFiltered ? ServiceRequestFilterMessage.EmptyTitle : ServiceRequestMessage.EmptyTitle
+      }
+      emptyDescription={
+        isFiltered
+          ? ServiceRequestFilterMessage.EmptyDescription
+          : ServiceRequestMessage.EmptyDescription
+      }
       emptyAction={
-        <Link href={AppRoute.NewServiceRequest} className={getButtonClassNames()}>
-          {ServiceRequestMessage.NewRequest}
-        </Link>
+        isFiltered ? undefined : (
+          <Link href={AppRoute.NewServiceRequest} className={getButtonClassNames()}>
+            {ServiceRequestMessage.NewRequest}
+          </Link>
+        )
       }
     />
   );

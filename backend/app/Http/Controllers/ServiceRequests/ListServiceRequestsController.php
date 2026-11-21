@@ -6,14 +6,17 @@
 namespace App\Http\Controllers\ServiceRequests;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ServiceRequests\ListServiceRequestsRequest;
 use App\Http\Resources\ServiceRequestSummaryResource;
 use App\Services\ServiceRequests\ServiceRequestService;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 final class ListServiceRequestsController extends Controller
 {
-    public function __invoke(ServiceRequestService $service): AnonymousResourceCollection
+    public function __invoke(ListServiceRequestsRequest $request, ServiceRequestService $service): AnonymousResourceCollection
     {
-        return ServiceRequestSummaryResource::collection($service->paginateAllRequests());
+        return ServiceRequestSummaryResource::collection(
+            $service->paginateAllRequests($request->toFilters())->appends($request->filterQuery()),
+        );
     }
 }

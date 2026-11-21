@@ -3,18 +3,22 @@
 
 "use client";
 
-import {
-  usePaginatedResource,
-  type PaginatedResource,
-} from "@/hooks/shared/use-paginated-resource";
+import { useServiceRequestSummaries } from "@/hooks/service-requests/use-service-request-summaries";
+import type { PaginatedResource } from "@/hooks/shared/use-paginated-resource";
 import { serviceRequestService } from "@/services/service-requests/service-request-service";
+import type { ServiceRequestFilters } from "@/types/service-requests/service-request-filters";
 import type { ServiceRequestSummary } from "@/types/service-requests/service-request-summary";
 import type { PaginatedResponse } from "@/types/shared/paginated-response";
 
-function loadServiceRequestsPage(page: number): Promise<PaginatedResponse<ServiceRequestSummary>> {
-  return serviceRequestService.listServiceRequests(page);
+function loadServiceRequestsPage(
+  page: number,
+  filters: ServiceRequestFilters,
+): Promise<PaginatedResponse<ServiceRequestSummary>> {
+  return serviceRequestService.listServiceRequests(page, filters);
 }
 
-export function useServiceRequests(): PaginatedResource<ServiceRequestSummary> {
-  return usePaginatedResource(loadServiceRequestsPage);
+export function useServiceRequests(
+  filters: ServiceRequestFilters,
+): PaginatedResource<ServiceRequestSummary> {
+  return useServiceRequestSummaries(loadServiceRequestsPage, filters);
 }

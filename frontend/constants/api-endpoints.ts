@@ -13,6 +13,7 @@ export enum ApiEndpoint {
   Users = "/api/users",
   ServiceRequests = "/api/service-requests",
   MyServiceRequests = "/api/service-requests/mine",
+  MyServiceRequestAssignees = "/api/service-requests/mine/assignees",
   ServiceRequestAssignees = "/api/service-requests/assignees",
   Overview = "/api/overview",
 }

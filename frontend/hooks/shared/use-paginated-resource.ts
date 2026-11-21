@@ -45,7 +45,14 @@ export function usePaginatedResource<Resource>(
     status: LoadStatus.Loading,
   });
   const [page, setPage] = useState(FIRST_PAGE);
+  const [activeLoader, setActiveLoader] = useState(() => loadPage);
   const latestRequestRef = useRef(0);
+
+  if (activeLoader !== loadPage) {
+    setActiveLoader(() => loadPage);
+    setPage(FIRST_PAGE);
+    setState({ status: LoadStatus.Loading });
+  }
 
   const applyState = useCallback(
     (requestedPage: number, nextState: PaginatedResourceState<Resource>) => {

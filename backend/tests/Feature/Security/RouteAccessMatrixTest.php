@@ -61,6 +61,7 @@ class RouteAccessMatrixTest extends TestCase
         'overview.show' => ['method' => 'GET', 'uri' => 'api/overview', 'roles' => self::STAFF_ROLES, 'allowed_while_pending' => false],
         'service-requests.store' => ['method' => 'POST', 'uri' => 'api/service-requests', 'roles' => self::ALL_ROLES, 'allowed_while_pending' => false],
         'service-requests.mine' => ['method' => 'GET', 'uri' => 'api/service-requests/mine', 'roles' => self::ALL_ROLES, 'allowed_while_pending' => false],
+        'service-requests.mine.assignees' => ['method' => 'GET', 'uri' => 'api/service-requests/mine/assignees', 'roles' => self::ALL_ROLES, 'allowed_while_pending' => false],
         'service-requests.index' => ['method' => 'GET', 'uri' => 'api/service-requests', 'roles' => self::STAFF_ROLES, 'allowed_while_pending' => false],
         'service-requests.assignees' => ['method' => 'GET', 'uri' => 'api/service-requests/assignees', 'roles' => self::STAFF_ROLES, 'allowed_while_pending' => false],
         'service-requests.assign' => ['method' => 'POST', 'uri' => 'api/service-requests/{serviceRequest}/assignment', 'roles' => self::STAFF_ROLES, 'allowed_while_pending' => false],
