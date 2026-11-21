@@ -1,5 +1,5 @@
 // Text for the sign in, change password and sign out features.
-// Also holds the placeholder text of the overview page until Phase 7 replaces it.
+// Shared by the public sign in page, the change password page and the sidebar sign out action.
 
 export const AuthMessage = {
   SignInTitle: "Sign in",
@@ -19,6 +19,4 @@ export const AuthMessage = {
   PasswordChanged: "Your password has been changed.",
   SignOutButton: "Sign out",
   SignOutFailed: "You could not be signed out. Please try again.",
-  OverviewTitle: "Overview",
-  OverviewPlaceholder: "The overview of service requests will appear here.",
 } as const;

@@ -1,23 +1,20 @@
-// Overview page for technicians and admins, holding placeholder content for now.
-// Phase 7 replaces the placeholder with the counts, highlights and charts.
+// Overview page for technicians and admins with the request counts, the highlights to review and the long term trends.
+// The page itself is a server component, and the panel loads the figures in the browser.
 
 import type { Metadata } from "next";
-import { EmptyState } from "@/components/shared/empty-state";
+import { OverviewPanel } from "@/components/overview/overview-panel";
 import { PageHeader } from "@/components/shared/page-header";
-import { AuthMessage } from "@/constants/auth-messages";
+import { OverviewMessage } from "@/constants/overview-messages";
 
 export const metadata: Metadata = {
-  title: AuthMessage.OverviewTitle,
+  title: OverviewMessage.PageTitle,
 };
 
 export default function OverviewPage() {
   return (
     <>
-      <PageHeader title={AuthMessage.OverviewTitle} />
-      <EmptyState
-        description={AuthMessage.OverviewPlaceholder}
-        className="flex-1 rounded-lg border border-dashed border-border"
-      />
+      <PageHeader title={OverviewMessage.PageTitle} description={OverviewMessage.PageDescription} />
+      <OverviewPanel />
     </>
   );
 }

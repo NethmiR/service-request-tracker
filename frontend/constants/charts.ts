@@ -52,3 +52,5 @@ export const CHART_VALUE_FRACTION_DIGITS = 1;
 export const LEGEND_SWATCH_SIZE = 12;
 
 export const LEGEND_SWATCH_RADIUS = 2;
+
+export const STACKED_BAR_LABEL_MAX_CHARACTERS = 22;
