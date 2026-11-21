@@ -1,7 +1,7 @@
 <?php
 
-// Represents an IT service request raised by a user, with its tags and both histories.
-// The current assignee is derived from the latest assignee history record and is never stored on the request.
+// Represents an IT service request raised by a user, with its tags, its priority and both histories.
+// The priority is fixed on creation, and the current assignee is derived from the latest assignee history record.
 // It also answers whether a given user is the current assignee, which the workflow rules rely on.
 
 namespace App\Models;
@@ -28,6 +28,11 @@ class ServiceRequest extends Model
     public function requester(): BelongsTo
     {
         return $this->belongsTo(User::class, 'requested_by_user_id');
+    }
+
+    public function priorityTag(): BelongsTo
+    {
+        return $this->belongsTo(PriorityTag::class);
     }
 
     public function tags(): BelongsToMany

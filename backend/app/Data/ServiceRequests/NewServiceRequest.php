@@ -1,10 +1,11 @@
 <?php
 
-// Carries the validated title, description and tags of a service request being created.
+// Carries the validated title, description, tags and priority of a service request being created.
 // Keeps the service request service independent of the HTTP request.
 
 namespace App\Data\ServiceRequests;
 
+use App\Enums\ServiceRequestPriority;
 use InvalidArgumentException;
 
 final readonly class NewServiceRequest
@@ -15,6 +16,7 @@ final readonly class NewServiceRequest
         public string $title,
         public string $description,
         public array $tags,
+        public ServiceRequestPriority $priority,
     ) {
         if ($tags === []) {
             throw new InvalidArgumentException(self::EMPTY_TAGS_MESSAGE);

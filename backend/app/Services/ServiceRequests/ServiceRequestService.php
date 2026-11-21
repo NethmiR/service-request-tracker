@@ -1,7 +1,8 @@
 <?php
 
 // Creates service requests, lists the requests of one user or of everyone for the dashboard and loads a request with its histories.
-// Also lists the staff users a request can be assigned to, and creation writes the request, its tags and the initial status record in one transaction.
+// Both lists filter by status, assignee and priority and search the title, and creation writes the request with its priority, its tags and the initial status record in one transaction.
+// Also lists the staff users a request can be assigned to.
 
 namespace App\Services\ServiceRequests;
 
@@ -10,9 +11,11 @@ use App\Data\ServiceRequests\ServiceRequestFilters;
 use App\Enums\ServiceRequestStatus;
 use App\Enums\ServiceRequestTag;
 use App\Enums\UserRole;
+use App\Models\PriorityTag;
 use App\Models\ServiceRequest;
 use App\Models\Tag;
 use App\Models\User;
+use App\Support\Database\TitleSearch;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -24,6 +27,7 @@ final class ServiceRequestService
 
     private const array SUMMARY_RELATIONS = [
         'tags',
+        'priorityTag',
         'requester',
         'currentAssigneeHistory.assignedTo',
     ];
@@ -47,6 +51,9 @@ final class ServiceRequestService
                 'description' => $newRequest->description,
             ]);
             $serviceRequest->requester()->associate($requester);
+            $serviceRequest->priorityTag()->associate(
+                PriorityTag::query()->where('name', $newRequest->priority->value)->firstOrFail(),
+            );
             $serviceRequest->status = ServiceRequestStatus::Open;
             $serviceRequest->save();
 
@@ -124,6 +131,14 @@ final class ServiceRequestService
                         $filters->assigneeId,
                     ),
                 ),
+            )
+            ->when(
+                $filters->priority !== null,
+                fn (Builder $query): Builder => $query->whereRelation('priorityTag', 'name', $filters->priority->value),
+            )
+            ->when(
+                $filters->search !== null,
+                fn (Builder $query): Builder => TitleSearch::apply($query, 'title', $filters->search),
             )
             ->orderByDesc('created_at')
             ->orderByDesc('id');
